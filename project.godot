@@ -1,6 +1,10 @@
 ; Engine configuration file.
-; Exocraft - a sci-fi/cyberpunk Terraria-like sandbox.
-; Generated for Godot 4.6.x
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
