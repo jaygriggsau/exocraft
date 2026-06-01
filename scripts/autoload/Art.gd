@@ -284,24 +284,34 @@ func _make_bolt() -> Image:
 	return img
 
 func _make_starfield() -> Image:
-	# A tiling 256x256 deep-space backdrop.
-	var size := 256
+	# A seamless, transparent 512x512 star overlay (the sky gradient + nebula are
+	# drawn behind it by the sky shader, so there are no visible tiling bands).
+	var size := 512
 	var img := _new_image(size, size)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 42
-	# faint nebula gradient
-	for y in size:
-		var t := float(y) / size
-		var col := Color("0a0814").lerp(Color("140a24"), t)
-		for x in size:
-			img.set_pixel(x, y, col)
-	# stars
-	for i in 220:
-		var x := rng.randi_range(0, size - 1)
-		var y := rng.randi_range(0, size - 1)
-		var b := rng.randf_range(0.4, 1.0)
-		var tint: Color = [Color(1, 1, 1), Color("2dffff"), Color("ff2bd6")][rng.randi() % 3]
-		img.set_pixel(x, y, tint * b)
+	rng.seed = 1337
+	var palette := [Color(1, 1, 1), Color("bfe9ff"), Color("ffd0f0"), Color("cdd4ff")]
+	for i in 760:
+		var x := rng.randi_range(2, size - 3)
+		var y := rng.randi_range(2, size - 3)
+		var b := rng.randf_range(0.22, 1.0)
+		var tint: Color = palette[rng.randi() % palette.size()]
+		img.set_pixel(x, y, Color(tint.r, tint.g, tint.b, b))
+		if rng.randf() < 0.12:
+			# soft halo around a fraction of the stars
+			var halo := Color(tint.r, tint.g, tint.b, b * 0.3)
+			img.set_pixel(x + 1, y, halo)
+			img.set_pixel(x - 1, y, halo)
+			img.set_pixel(x, y + 1, halo)
+			img.set_pixel(x, y - 1, halo)
+		if rng.randf() < 0.04:
+			# rare bright star with cross glints
+			img.set_pixel(x, y, Color(tint.r, tint.g, tint.b, 1.0))
+			var g := Color(tint.r, tint.g, tint.b, 0.22)
+			img.set_pixel(x + 2, y, g)
+			img.set_pixel(x - 2, y, g)
+			img.set_pixel(x, y + 2, g)
+			img.set_pixel(x, y - 2, g)
 	return img
 
 func _make_disc(core: Color, corona: Color) -> Image:

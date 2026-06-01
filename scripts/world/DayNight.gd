@@ -30,12 +30,48 @@ var _stars: CanvasItem
 var _sun_disc: Sprite2D
 var _moon_disc: Sprite2D
 
+const NEBULA_A := Color(0.55, 0.10, 0.45)   # magenta cloud
+const NEBULA_B := Color(0.12, 0.18, 0.55)   # indigo cloud
+
 const SKY_SHADER := """
 shader_type canvas_item;
 uniform vec4 top_color : source_color;
 uniform vec4 horizon_color : source_color;
+uniform vec4 nebula_a : source_color;
+uniform vec4 nebula_b : source_color;
+uniform float night : hint_range(0.0, 1.0) = 0.0;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	float a = hash(i);
+	float b = hash(i + vec2(1.0, 0.0));
+	float c = hash(i + vec2(0.0, 1.0));
+	float d = hash(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+float fbm(vec2 p) {
+	float v = 0.0;
+	float amp = 0.5;
+	for (int i = 0; i < 4; i++) {
+		v += amp * vnoise(p);
+		p *= 2.0;
+		amp *= 0.5;
+	}
+	return v;
+}
 void fragment() {
-	COLOR = mix(top_color, horizon_color, smoothstep(0.0, 0.85, UV.y));
+	vec3 col = mix(top_color.rgb, horizon_color.rgb, smoothstep(0.0, 0.85, UV.y));
+	// soft procedural nebula, only at night and fading toward the horizon
+	float n = smoothstep(0.42, 0.95, fbm(UV * vec2(3.0, 2.2) + vec2(0.0, 1.7)));
+	float fall = 1.0 - smoothstep(0.05, 0.72, UV.y);
+	vec3 neb = mix(nebula_a.rgb, nebula_b.rgb, fbm(UV * 4.0 + 5.0));
+	col += neb * n * fall * night * 0.55;
+	COLOR = vec4(col, 1.0);
 }
 """
 
@@ -81,6 +117,8 @@ func _build_sky() -> void:
 	sh.code = SKY_SHADER
 	_sky_mat = ShaderMaterial.new()
 	_sky_mat.shader = sh
+	_sky_mat.set_shader_parameter("nebula_a", NEBULA_A)
+	_sky_mat.set_shader_parameter("nebula_b", NEBULA_B)
 	rect.material = _sky_mat
 	sky_layer.add_child(rect)
 
@@ -89,8 +127,8 @@ func _build_sky() -> void:
 	pb.layer = -99
 	add_child(pb)
 	var pl := ParallaxLayer.new()
-	pl.motion_scale = Vector2(0.2, 0.2)
-	pl.motion_mirroring = Vector2(256, 256)
+	pl.motion_scale = Vector2(0.15, 0.15)
+	pl.motion_mirroring = Vector2(512, 512)
 	pb.add_child(pl)
 	var star := Sprite2D.new()
 	star.texture = Art.sprite("star")
@@ -138,8 +176,10 @@ func _apply(t: float) -> void:
 	_sky_mat.set_shader_parameter("top_color", top)
 	_sky_mat.set_shader_parameter("horizon_color", hzn)
 
-	# stars fade out during the day
-	_stars.self_modulate.a = clampf(1.0 - day * 1.6, 0.0, 1.0)
+	# stars + nebula fade out during the day
+	var night := clampf(1.0 - day * 1.6, 0.0, 1.0)
+	_stars.self_modulate.a = night
+	_sky_mat.set_shader_parameter("night", night)
 
 	# arc the sun / moon discs across the sky (screen space)
 	_place_disc(_sun_disc, (t - 0.25) / 0.5, sun_elev)
