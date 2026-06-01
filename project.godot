@@ -1,0 +1,32 @@
+; Engine configuration file.
+; Exocraft - a sci-fi/cyberpunk Terraria-like sandbox.
+; Generated for Godot 4.6.x
+
+config_version=5
+
+[application]
+
+config/name="Exocraft"
+config/description="A sci-fi alien sandbox: endless world, biomes, mining, building, crafting and combat."
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Tiles="*res://scripts/autoload/Tiles.gd"
+ItemDB="*res://scripts/autoload/ItemDB.gd"
+Art="*res://scripts/autoload/Art.gd"
+Game="*res://scripts/autoload/Game.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.04, 0.03, 0.08, 1)

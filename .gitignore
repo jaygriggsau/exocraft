@@ -1,0 +1,22 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Mono / .NET
+.mono/
+data_*/
+mono_crash.*.json
+
+# Builds / exports
+build/
+*.exe
+*.pck
+*.zip
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~

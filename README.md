@@ -1,0 +1,96 @@
+# Exocraft
+
+A sci-fi / cyberpunk sandbox inspired by Terraria, built in **Godot 4.6**. Dig
+and build across an **endless, procedurally generated alien world** with multiple
+biomes, mine ores, craft gear, and fight off alien crawlers and sentry drones.
+
+All art is **pixel art generated at runtime** (see `scripts/autoload/Art.gd`) — the
+project ships with zero binary image assets, so it is fully deterministic and easy
+to restyle. Drop in hand-drawn PNGs later without touching gameplay code.
+
+![Exocraft](docs/screenshot.png)
+
+## Running
+
+1. Open the project folder in Godot 4.6 (`Import` → select `project.godot`).
+2. Press **F5** (Play).
+
+Or from the command line:
+
+```bash
+godot --path .
+```
+
+## Controls
+
+| Action            | Key                              |
+| ----------------- | -------------------------------- |
+| Move              | `A` / `D` or `←` / `→`           |
+| Jump              | `Space` / `W` / `↑`              |
+| Use selected item | **Left click**                   |
+| Mine (always)     | **Right click**                  |
+| Select hotbar     | `1` – `0`                        |
+| Inventory + craft | `E` or `Tab`                     |
+
+"Use selected item" depends on what is in the active hotbar slot:
+
+- **Plasma Drill** (tool) – mine the tile under the cursor
+- **Ion Blaster** (weapon) – fire an energy bolt toward the cursor
+- **Block** – place it under the cursor (needs an adjacent solid tile)
+- **Med-Cell** (consumable) – restore health
+
+## Features
+
+- **Endless world** streamed in 16×16-tile chunks around the player. Edits persist
+  in memory; generation is deterministic per world seed.
+- **Four surface biomes** chosen by low-frequency noise — Neon Wastes, Cryo Tundra,
+  Glass Dunes, Toxic Jungle — plus an underground Slate layer that turns into the
+  Obsidite biome at depth, threaded with caves and ore veins.
+- **Ores**: Ferralite (metal), Vyrite (crystal) and Ion ore (energy, glowing),
+  gated by depth and rarity.
+- **Mining & building** with reach limits, hardness-based dig times, support
+  checks, and item drops that fall and magnetise to the player.
+- **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, a fabricator with
+  recipes (Hull Plating, Neon Glass, Med-Cells, a replacement Blaster…).
+- **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and
+  flying **Drones** (drift through the air toward you), spawned in a ring just
+  off-screen up to a cap. They drop scrap / energy cores.
+- **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
+
+## Project layout
+
+```
+project.godot              Autoloads, input defaults, pixel-perfect render settings
+scenes/Main.tscn           Tiny root scene; everything else is built in code
+scripts/
+  Main.gd                  Bootstraps world, player, spawner, HUD, parallax bg
+  autoload/
+    Tiles.gd               Tile id registry: visuals + material data
+    ItemDB.gd              Item definitions + crafting recipes
+    Art.gd                 Runtime pixel-art: tile atlas/TileSet, sprites, icons
+    Game.gd                Global refs, signals, health, input map setup
+  world/
+    World.gd               Endless chunk streaming + procedural generation
+    EnemySpawner.gd        Off-screen ring spawner with a population cap
+  player/Player.gd         Movement, mine/build/shoot, reach, drops
+  entities/                Projectile, ItemPickup, Crawler, Drone
+  inventory/Inventory.gd   Slot/stack model + crafting
+  ui/HUD.gd                Health, hotbar, inventory grid, fabricator
+```
+
+## Extending
+
+- **New tile**: add an id + entry in `Tiles.gd` `DEFS`; `Art.gd` draws it and the
+  TileSet picks it up automatically.
+- **New item / recipe**: add to `ItemDB.ITEMS` / `ItemDB.RECIPES`.
+- **New biome**: extend the `biome_at()` bands and `_surface_tile()` /
+  `_soil_tile()` in `World.gd`.
+- **New enemy**: copy `Crawler.gd`, add it to the `"enemies"` group, and spawn it
+  from `EnemySpawner.gd`.
+
+## Tech notes
+
+- Tiles are data in `World.chunks` (chunk-coord → `PackedInt32Array`); a single
+  `TileMapLayer` is used purely for rendering + collision and is streamed.
+- `Game.world` / `Game.player` are intentionally untyped to avoid a GDScript
+  autoload⇄class parse cycle; call sites annotate their own locals.
