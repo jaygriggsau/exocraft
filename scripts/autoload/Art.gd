@@ -13,12 +13,14 @@ var atlas_source_id := 0
 var _tile_images := {}   # tile id -> Image
 var _item_icons := {}    # item id -> ImageTexture
 var _sprites := {}       # name   -> ImageTexture
+var _light_tex: ImageTexture
 
 func _ready() -> void:
 	_build_tile_images()
 	_build_tileset()
 	_build_item_icons()
 	_build_sprites()
+	_build_light_texture()
 
 # ---------------------------------------------------------------------------
 # Small drawing helpers
@@ -126,18 +128,22 @@ func _build_tileset() -> void:
 	ts.tile_size = Vector2i(TS, TS)
 	ts.add_physics_layer()
 	ts.set_physics_layer_collision_layer(0, 1)
+	# Occlusion layer so every solid block casts 2D light shadows.
+	ts.add_occlusion_layer()
 
 	var src := TileSetAtlasSource.new()
 	src.texture = tex
 	src.texture_region_size = Vector2i(TS, TS)
-	# Attach the source first so TileData picks up the tileset's physics layer
-	# before we start adding collision polygons.
+	# Attach the source first so TileData picks up the tileset's physics +
+	# occlusion layers before we start adding polygons.
 	atlas_source_id = ts.add_source(src, 0)
 
 	var half := float(TS) / 2.0
 	var square := PackedVector2Array([
 		Vector2(-half, -half), Vector2(half, -half),
 		Vector2(half, half), Vector2(-half, half)])
+	var occ := OccluderPolygon2D.new()
+	occ.polygon = square
 
 	for id in Tiles.ids():
 		var coord := Vector2i(id, 0)
@@ -145,6 +151,7 @@ func _build_tileset() -> void:
 		var td := src.get_tile_data(coord, 0)
 		td.add_collision_polygon(0)
 		td.set_collision_polygon_points(0, 0, square)
+		td.set_occluder(0, occ)
 
 	tileset = ts
 
@@ -209,6 +216,8 @@ func _build_sprites() -> void:
 	_sprites["drone"] = ImageTexture.create_from_image(_make_drone())
 	_sprites["bolt"] = ImageTexture.create_from_image(_make_bolt())
 	_sprites["star"] = ImageTexture.create_from_image(_make_starfield())
+	_sprites["sun"] = ImageTexture.create_from_image(_make_disc(Color("ffe8a8"), Color("ff9a3a")))
+	_sprites["moon"] = ImageTexture.create_from_image(_make_disc(Color("dfe6ff"), Color("8f9ad0")))
 
 func _make_player() -> Image:
 	# 12 x 22 cyber-suited explorer.
@@ -294,6 +303,37 @@ func _make_starfield() -> Image:
 		var tint: Color = [Color(1, 1, 1), Color("2dffff"), Color("ff2bd6")][rng.randi() % 3]
 		img.set_pixel(x, y, tint * b)
 	return img
+
+func _make_disc(core: Color, corona: Color) -> Image:
+	# 64x64 celestial body: solid core fading into a soft corona.
+	var size := 64
+	var img := _new_image(size, size)
+	var c := size / 2.0
+	for y in size:
+		for x in size:
+			var d := Vector2(x - c, y - c).length() / c
+			if d <= 0.42:
+				img.set_pixel(x, y, core)
+			elif d < 1.0:
+				var a := clampf(1.0 - (d - 0.42) / 0.58, 0.0, 1.0)
+				img.set_pixel(x, y, Color(corona.r, corona.g, corona.b, a * 0.7))
+	return img
+
+func _build_light_texture() -> void:
+	# 256x256 soft radial falloff used by every PointLight2D in the game.
+	var size := 256
+	var img := _new_image(size, size)
+	var c := size / 2.0
+	for y in size:
+		for x in size:
+			var d := Vector2(x - c, y - c).length() / c
+			var a := clampf(1.0 - d, 0.0, 1.0)
+			a = a * a            # smoother, rounder falloff
+			img.set_pixel(x, y, Color(a, a, a, a))
+	_light_tex = ImageTexture.create_from_image(img)
+
+func light_texture() -> Texture2D:
+	return _light_tex
 
 func sprite(name: String) -> Texture2D:
 	return _sprites.get(name)

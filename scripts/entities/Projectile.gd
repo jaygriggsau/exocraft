@@ -26,6 +26,12 @@ func _ready() -> void:
 	s.texture = Art.sprite("bolt")
 	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(s)
+	var l := PointLight2D.new()
+	l.texture = Art.light_texture()
+	l.color = Color("ff2bd6") if _from_player else Color("ff5a5a")
+	l.energy = 1.1
+	l.scale = Vector2(0.3, 0.3)
+	add_child(l)
 
 func _physics_process(dt: float) -> void:
 	global_position += _dir * _speed * dt

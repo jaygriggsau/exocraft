@@ -8,7 +8,8 @@ All art is **pixel art generated at runtime** (see `scripts/autoload/Art.gd`) �
 project ships with zero binary image assets, so it is fully deterministic and easy
 to restyle. Drop in hand-drawn PNGs later without touching gameplay code.
 
-![Exocraft](docs/screenshot.png)
+![Exocraft at dusk](docs/screenshot.png)
+![Exocraft at night](docs/night.png)
 
 ## Running
 
@@ -31,6 +32,7 @@ godot --path .
 | Mine (always)     | **Right click**                  |
 | Select hotbar     | `1` – `0`                        |
 | Inventory + craft | `E` or `Tab`                     |
+| Peaceful mode     | `P` (toggle enemies on/off)      |
 
 "Use selected item" depends on what is in the active hotbar slot:
 
@@ -56,6 +58,18 @@ godot --path .
   flying **Drones** (drift through the air toward you), spawned in a ring just
   off-screen up to a cap. They drop scrap / energy cores.
 - **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
+- **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
+  enemies) for relaxed building.
+- **Day/night cycle + dynamic lighting** (high-end):
+  - A timed sun and moon arc across a **shader sky** that transitions
+    dawn → day → dusk → night, with a cyberpunk-magenta twilight glow and stars
+    that fade in at night.
+  - A `CanvasModulate` ambient floor plus `DirectionalLight2D` sun/moon that
+    **cast real shadows** off the terrain — surfaces are sunlit while caves stay
+    dark.
+  - Streamed **point lights**: a shadow-casting player headlamp, glowing ore /
+    neon blocks (lit per chunk near the player), blaster bolts and drone eyes.
+  - Neon **bloom** via a `WorldEnvironment` + HDR 2D (Forward+/Mobile).
 
 ## Project layout
 
@@ -70,8 +84,9 @@ scripts/
     Art.gd                 Runtime pixel-art: tile atlas/TileSet, sprites, icons
     Game.gd                Global refs, signals, health, input map setup
   world/
-    World.gd               Endless chunk streaming + procedural generation
-    EnemySpawner.gd        Off-screen ring spawner with a population cap
+    World.gd               Endless chunk streaming + procedural generation + block lights
+    EnemySpawner.gd        Off-screen ring spawner (respects peaceful mode)
+    DayNight.gd            Time of day, sun/moon lights + shadows, shader sky
   player/Player.gd         Movement, mine/build/shoot, reach, drops
   entities/                Projectile, ItemPickup, Crawler, Drone
   inventory/Inventory.gd   Slot/stack model + crafting
@@ -87,6 +102,9 @@ scripts/
   `_soil_tile()` in `World.gd`.
 - **New enemy**: copy `Crawler.gd`, add it to the `"enemies"` group, and spawn it
   from `EnemySpawner.gd`.
+- **Tune lighting / day length**: the constants at the top of `DayNight.gd`
+  (`DAY_LENGTH`, ambient/sky palette, `SUN_MAX`, `SUN_SHADOWS`). Glowing block
+  light colours live in `Tiles.gd` (`light` / `light_energy`).
 
 ## Tech notes
 

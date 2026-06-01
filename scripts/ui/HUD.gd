@@ -14,6 +14,8 @@ var _select_sb: StyleBoxFlat
 var _hp_fill: ColorRect
 var _hp_label: Label
 var _info_label: Label
+var _clock_label: Label
+var _peaceful_label: Label
 var _death_label: Label
 
 var _hotbar_slots := []          # array of {panel,icon,label}
@@ -44,6 +46,8 @@ func _process(_dt: float) -> void:
 		var depth: int = t.y - Game.world.surface_height(t.x)
 		var biome := _biome_name(Game.world.biome_at(t.x))
 		_info_label.text = "%s    depth %d" % [biome, maxi(0, depth)]
+	_clock_label.text = "Day %d  %s  %s" % [Game.day_count, Game.clock_string(), Game.day_phase()]
+	_peaceful_label.visible = not Game.enemies_enabled
 
 func _biome_name(b: int) -> String:
 	match b:
@@ -87,10 +91,21 @@ func _build_info() -> void:
 	_info_label.position = Vector2(16, 44)
 	add_child_control(_info_label)
 
-	var hint := _make_label("Move WAD/Arrows  •  Jump Space  •  L-Click use item  •  R-Click mine  •  1-0 hotbar  •  E inventory", 11)
+	var hint := _make_label("Move WAD/Arrows  •  Jump Space  •  L-Click use item  •  R-Click mine  •  1-0 hotbar  •  E inventory  •  P peaceful", 11)
 	hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	hint.position = Vector2(16, VH - 20)
 	add_child_control(hint)
+
+	_clock_label = _make_label("Day 1  06:00  Day", 14)
+	_clock_label.modulate = Color("ffe8a8")
+	_clock_label.position = Vector2(VW - 220, 16)
+	add_child_control(_clock_label)
+
+	_peaceful_label = _make_label("PEACEFUL", 13)
+	_peaceful_label.modulate = Color("39ff88")
+	_peaceful_label.position = Vector2(VW - 220, 38)
+	_peaceful_label.visible = false
+	add_child_control(_peaceful_label)
 
 func _build_hotbar() -> void:
 	var total := Inventory.HOTBAR * (SLOT + PAD) - PAD
@@ -182,6 +197,8 @@ func _unhandled_input(e: InputEvent) -> void:
 			Game.inventory.select(9)
 	if e.is_action_pressed("toggle_inventory"):
 		_toggle_inventory()
+	elif e.is_action_pressed("toggle_enemies"):
+		Game.toggle_enemies()
 
 func _toggle_inventory() -> void:
 	var open := not _inv_panel.visible

@@ -8,8 +8,16 @@ const MAX_TILES := 24
 
 var _t := 0.0
 
+func _ready() -> void:
+	Game.enemies_toggled.connect(_on_toggled)
+
+func _on_toggled(enabled: bool) -> void:
+	if not enabled:
+		for e in get_tree().get_nodes_in_group("enemies"):
+			e.queue_free()
+
 func _process(dt: float) -> void:
-	if Game.player == null or Game.world == null:
+	if not Game.enemies_enabled or Game.player == null or Game.world == null:
 		return
 	_t += dt
 	if _t < INTERVAL:

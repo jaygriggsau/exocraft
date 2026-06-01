@@ -11,6 +11,7 @@ extends Node2D
 const TILE := 16                    # px per tile (must match Art.TS)
 const CHUNK := 16                   # tiles per chunk side
 const LOAD_RADIUS := 3              # chunks loaded around the player
+const LIGHT_RADIUS := 1            # chunks (around player) that emit block lights
 
 const SURFACE_BASE := 0            # tile-y around which the surface sits
 const SURFACE_AMP := 10.0
@@ -23,6 +24,7 @@ enum { TUNDRA, DUNES, WASTES, JUNGLE }
 var tilemap: TileMapLayer
 var chunks := {}                    # Vector2i -> PackedInt32Array
 var _loaded := {}                   # Vector2i -> true (currently rendered)
+var _chunk_lights := {}             # Vector2i -> Array[PointLight2D]
 var _last_center := Vector2i(999999, 999999)
 
 var _height_noise := FastNoiseLite.new()
@@ -99,6 +101,43 @@ func _stream(center: Vector2i) -> void:
 			_erase_chunk(cc)
 			_loaded.erase(cc)
 
+	# stream glowing-block lights for just the nearest chunks (perf)
+	var want_l := {}
+	for cy in range(center.y - LIGHT_RADIUS, center.y + LIGHT_RADIUS + 1):
+		for cx in range(center.x - LIGHT_RADIUS, center.x + LIGHT_RADIUS + 1):
+			want_l[Vector2i(cx, cy)] = true
+	for cc in want_l.keys():
+		if not _chunk_lights.has(cc):
+			_build_chunk_lights(cc)
+	for cc in _chunk_lights.keys():
+		if not want_l.has(cc):
+			_free_chunk_lights(cc)
+
+func _build_chunk_lights(cc: Vector2i) -> void:
+	var data := _get_chunk(cc)
+	var arr: Array = []
+	var ox := cc.x * CHUNK
+	var oy := cc.y * CHUNK
+	for ly in CHUNK:
+		for lx in CHUNK:
+			var id := data[ly * CHUNK + lx]
+			if Tiles.is_glowing(id):
+				var lite := PointLight2D.new()
+				lite.texture = Art.light_texture()
+				lite.color = Tiles.glow_color(id)
+				lite.energy = Tiles.glow_energy(id)
+				lite.scale = Vector2(0.4, 0.4)
+				lite.position = tile_to_world_center(Vector2i(ox + lx, oy + ly))
+				add_child(lite)
+				arr.append(lite)
+	_chunk_lights[cc] = arr
+
+func _free_chunk_lights(cc: Vector2i) -> void:
+	for l in _chunk_lights.get(cc, []):
+		if is_instance_valid(l):
+			l.queue_free()
+	_chunk_lights.erase(cc)
+
 func _render_chunk(cc: Vector2i) -> void:
 	var data := _get_chunk(cc)
 	var ox := cc.x * CHUNK
@@ -152,6 +191,10 @@ func set_tile(t: Vector2i, id: int) -> int:
 			tilemap.erase_cell(t)
 		else:
 			tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id))
+	# refresh block lights for this chunk if it is in the lit zone
+	if _chunk_lights.has(cc):
+		_free_chunk_lights(cc)
+		_build_chunk_lights(cc)
 	return prev
 
 # ---------------------------------------------------------------------------
