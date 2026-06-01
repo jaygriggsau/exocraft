@@ -1,12 +1,16 @@
 extends Node2D
-## Boots the game: builds the parallax space backdrop, the world, the player,
-## the enemy spawner and the HUD, then drops the player onto the surface.
+## Boots the game: neon-bloom environment, the day/night lighting manager, the
+## world, the player, the enemy spawner and the HUD.
 
 const HUDScript := preload("res://scripts/ui/HUD.gd")
 const SpawnerScript := preload("res://scripts/world/EnemySpawner.gd")
 
 func _ready() -> void:
-	_build_background()
+	_build_environment()
+
+	var daynight := DayNight.new()
+	daynight.name = "DayNight"
+	add_child(daynight)
 
 	var world := World.new()
 	world.name = "World"
@@ -30,16 +34,17 @@ func _ready() -> void:
 	hud.name = "HUD"
 	add_child(hud)
 
-func _build_background() -> void:
-	var bg := ParallaxBackground.new()
-	bg.layer = -100
-	var layer := ParallaxLayer.new()
-	layer.motion_scale = Vector2(0.2, 0.2)
-	layer.motion_mirroring = Vector2(256, 256)
-	var sprite := Sprite2D.new()
-	sprite.texture = Art.sprite("star")
-	sprite.centered = false
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	layer.add_child(sprite)
-	bg.add_child(layer)
-	add_child(bg)
+func _build_environment() -> void:
+	# Subtle bloom makes the neon lights and ores glow (Forward+/Mobile only;
+	# ignored harmlessly on the Compatibility renderer).
+	var env := Environment.new()
+	env.background_mode = Environment.BG_CANVAS
+	env.glow_enabled = true
+	env.glow_intensity = 0.7
+	env.glow_strength = 1.0
+	env.glow_bloom = 0.15
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
+	env.glow_hdr_threshold = 1.0
+	var we := WorldEnvironment.new()
+	we.environment = env
+	add_child(we)

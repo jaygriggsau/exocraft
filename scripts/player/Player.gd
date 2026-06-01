@@ -50,6 +50,24 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()
 
+	# shadow-casting headlamp so caves and night are explorable
+	var lamp := PointLight2D.new()
+	lamp.texture = Art.light_texture()
+	lamp.color = Color(1.0, 0.96, 0.86)
+	lamp.energy = 1.05
+	lamp.scale = Vector2(1.25, 1.25)
+	lamp.shadow_enabled = true
+	lamp.shadow_filter = Light2D.SHADOW_FILTER_PCF5
+	lamp.position = Vector2(0, -6)
+	add_child(lamp)
+	# soft personal glow that ignores walls, so the player is always visible
+	var aura := PointLight2D.new()
+	aura.texture = Art.light_texture()
+	aura.color = Color(0.6, 0.8, 1.0)
+	aura.energy = 0.5
+	aura.scale = Vector2(0.45, 0.45)
+	add_child(aura)
+
 	Game.player_died.connect(_on_died)
 
 func _starting_kit() -> void:
