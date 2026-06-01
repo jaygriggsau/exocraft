@@ -30,7 +30,7 @@ godot --path .
 | Jump              | `Space` / `W` / `↑`              |
 | Use selected item | **Left click**                   |
 | Mine (always)     | **Right click**                  |
-| Select hotbar     | `1` – `0`                        |
+| Select hotbar     | `1` – `0` or **mouse wheel**     |
 | Inventory + craft | `E` or `Tab`                     |
 | Peaceful mode     | `P` (toggle enemies on/off)      |
 

@@ -26,6 +26,11 @@ func select(i: int) -> void:
 	selected = clampi(i, 0, HOTBAR - 1)
 	_changed()
 
+## Move the selection by `delta` slots, wrapping around the hotbar.
+func select_relative(delta: int) -> void:
+	selected = wrapi(selected + delta, 0, HOTBAR)
+	_changed()
+
 ## Add `count` of an item, stacking where possible. Returns the leftover that
 ## did not fit (0 on full success).
 func add(id: String, count: int) -> int:

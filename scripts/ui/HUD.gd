@@ -91,7 +91,7 @@ func _build_info() -> void:
 	_info_label.position = Vector2(16, 44)
 	add_child_control(_info_label)
 
-	var hint := _make_label("Move WAD/Arrows  •  Jump Space  •  L-Click use item  •  R-Click mine  •  1-0 hotbar  •  E inventory  •  P peaceful", 11)
+	var hint := _make_label("Move WAD/Arrows  •  Jump Space  •  L-Click use item  •  R-Click mine  •  1-0 / Scroll hotbar  •  E inventory  •  P peaceful", 11)
 	hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	hint.position = Vector2(16, VH - 20)
 	add_child_control(hint)
@@ -195,6 +195,12 @@ func _unhandled_input(e: InputEvent) -> void:
 			Game.inventory.select(k - KEY_1)
 		elif k == KEY_0:
 			Game.inventory.select(9)
+	if e is InputEventMouseButton and e.pressed:
+		# scroll wheel cycles the hotbar (up = left, down = right)
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP:
+			Game.inventory.select_relative(-1)
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			Game.inventory.select_relative(1)
 	if e.is_action_pressed("toggle_inventory"):
 		_toggle_inventory()
 	elif e.is_action_pressed("toggle_enemies"):
@@ -253,6 +259,7 @@ func _make_slot(parent: Node, x: int, y: int, size: int) -> Dictionary:
 	var panel := Panel.new()
 	panel.position = Vector2(x, y)
 	panel.size = Vector2(size, size)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE  # non-interactive; let wheel/clicks pass through
 	panel.add_theme_stylebox_override("panel", _normal_sb)
 	var icon := TextureRect.new()
 	icon.position = Vector2(4, 4)
