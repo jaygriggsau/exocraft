@@ -14,6 +14,7 @@ var _tile_images := {}   # tile id -> Image
 var _item_icons := {}    # item id -> ImageTexture
 var _sprites := {}       # name   -> ImageTexture
 var _light_tex: ImageTexture
+var _player_frames: SpriteFrames
 
 func _ready() -> void:
 	_build_tile_images()
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_build_item_icons()
 	_build_sprites()
 	_build_light_texture()
+	_build_player_frames()
 
 # ---------------------------------------------------------------------------
 # Small drawing helpers
@@ -220,21 +222,36 @@ func _build_sprites() -> void:
 	_sprites["moon"] = ImageTexture.create_from_image(_make_disc(Color("dfe6ff"), Color("8f9ad0")))
 
 func _make_player() -> Image:
-	# 12 x 22 cyber-suited explorer.
+	return _draw_player(0, 3, 7, 7, 7, 0, 0, false)
+
+## Draws one 12x22 frame of the cyber-suited explorer. Legs and arms are
+## parameterised so the same routine produces every animation pose:
+##   dy        : vertical body bob
+##   lx_l/lh_l : left leg x + height (shorter = lifted)
+##   lx_r/lh_r : right leg x + height
+##   arm_l/arm_r : per-arm vertical swing offset
+##   arms_up   : raised arms (jump / fall)
+func _draw_player(dy: int, lx_l: int, lh_l: int, lx_r: int, lh_r: int, arm_l: int, arm_r: int, arms_up: bool) -> Image:
 	var img := _new_image(12, 22)
 	var suit := Color("353a5c")
 	var suit_d := Color("23263f")
 	var visor := Color("2dffff")
 	var trim := Color("ff2bd6")
-	_rect(img, 3, 0, 6, 6, suit)        # head
-	_rect(img, 4, 2, 5, 2, visor)       # visor
-	_rect(img, 3, 6, 6, 9, suit)        # torso
-	_rect(img, 3, 6, 6, 1, trim)        # collar
-	_rect(img, 1, 7, 2, 6, suit_d)      # left arm
-	_rect(img, 9, 7, 2, 6, suit_d)      # right arm
-	_rect(img, 3, 15, 2, 7, suit_d)     # left leg
-	_rect(img, 7, 15, 2, 7, suit_d)     # right leg
-	_rect(img, 5, 9, 2, 2, trim)        # chest core
+	var by := dy
+	_rect(img, 3, by, 6, 6, suit)              # head
+	_rect(img, 4, by + 2, 5, 2, visor)         # visor
+	_rect(img, 3, by + 6, 6, 9, suit)          # torso
+	_rect(img, 3, by + 6, 6, 1, trim)          # collar
+	_rect(img, 5, by + 9, 2, 2, trim)          # chest core
+	if arms_up:
+		_rect(img, 1, by + 4, 2, 5, suit_d)
+		_rect(img, 9, by + 4, 2, 5, suit_d)
+	else:
+		_rect(img, 1, by + 7 + arm_l, 2, 6, suit_d)
+		_rect(img, 9, by + 7 + arm_r, 2, 6, suit_d)
+	var leg_top := by + 15
+	_rect(img, lx_l, leg_top, 2, lh_l, suit_d)
+	_rect(img, lx_r, leg_top, 2, lh_r, suit_d)
 	return img
 
 func _make_crawler() -> Image:
@@ -344,6 +361,43 @@ func _build_light_texture() -> void:
 
 func light_texture() -> Texture2D:
 	return _light_tex
+
+func _ptex(img: Image) -> ImageTexture:
+	return ImageTexture.create_from_image(img)
+
+func _build_player_frames() -> void:
+	var sf := SpriteFrames.new()
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+
+	# idle: a gentle breathing bob
+	sf.add_animation("idle")
+	sf.set_animation_speed("idle", 2.5)
+	sf.set_animation_loop("idle", true)
+	sf.add_frame("idle", _ptex(_draw_player(0, 3, 7, 7, 7, 0, 0, false)))
+	sf.add_frame("idle", _ptex(_draw_player(1, 3, 6, 7, 6, 0, 0, false)))
+
+	# run: 4-frame leg/arm cycle with a small bounce
+	sf.add_animation("run")
+	sf.set_animation_speed("run", 10.0)
+	sf.set_animation_loop("run", true)
+	sf.add_frame("run", _ptex(_draw_player(0, 2, 7, 7, 4, 1, -1, false)))
+	sf.add_frame("run", _ptex(_draw_player(1, 3, 6, 7, 6, 0, 0, false)))
+	sf.add_frame("run", _ptex(_draw_player(0, 3, 4, 8, 7, -1, 1, false)))
+	sf.add_frame("run", _ptex(_draw_player(1, 3, 6, 7, 6, 0, 0, false)))
+
+	# jump (rising) and fall (descending)
+	sf.add_animation("jump")
+	sf.set_animation_loop("jump", false)
+	sf.add_frame("jump", _ptex(_draw_player(0, 3, 4, 7, 4, 0, 0, true)))
+	sf.add_animation("fall")
+	sf.set_animation_loop("fall", false)
+	sf.add_frame("fall", _ptex(_draw_player(0, 2, 5, 8, 5, 0, 0, true)))
+
+	_player_frames = sf
+
+func player_frames() -> SpriteFrames:
+	return _player_frames
 
 func sprite(name: String) -> Texture2D:
 	return _sprites.get(name)

@@ -15,8 +15,9 @@ const PLACE_COOLDOWN := 0.12
 const INVULN := 0.6
 
 var inv: Inventory
-var sprite: Sprite2D
+var sprite: AnimatedSprite2D
 var facing := 1
+var _anim := ""
 var _mine_target := Vector2i(2147483647, 0)
 var _mine_progress := 0.0
 var _place_cd := 0.0
@@ -38,9 +39,10 @@ func _ready() -> void:
 	shape.shape = rect
 	add_child(shape)
 
-	sprite = Sprite2D.new()
-	sprite.texture = Art.sprite("player")
+	sprite = AnimatedSprite2D.new()
+	sprite.sprite_frames = Art.player_frames()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.play("idle")
 	add_child(sprite)
 
 	var cam := Camera2D.new()
@@ -100,10 +102,21 @@ func _physics_process(dt: float) -> void:
 		velocity.y = JUMP_VELOCITY
 
 	move_and_slide()
+	_update_anim()
 
 	if not Game.ui_blocking:
 		_handle_interaction(dt)
 	queue_redraw()
+
+func _update_anim() -> void:
+	var name := "idle"
+	if not is_on_floor():
+		name = "jump" if velocity.y < 0.0 else "fall"
+	elif absf(velocity.x) > 8.0:
+		name = "run"
+	if name != _anim:
+		_anim = name
+		sprite.play(name)
 
 func _handle_interaction(dt: float) -> void:
 	# Right mouse always mines (handy even with a weapon selected).

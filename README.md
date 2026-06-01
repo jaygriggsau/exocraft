@@ -59,6 +59,8 @@ godot --path .
 - **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and
   flying **Drones** (drift through the air toward you), spawned in a ring just
   off-screen up to a cap. They drop scrap / energy cores.
+- **Animated player**: idle breathing bob, a 4-frame run cycle, and jump / fall
+  poses, all built from runtime-generated frames driven by an `AnimatedSprite2D`.
 - **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
 - **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
   enemies) for relaxed building.
