@@ -50,8 +50,10 @@ godot --path .
   Obsidite biome at depth, threaded with caves and ore veins.
 - **Ores**: Ferralite (metal), Vyrite (crystal) and Ion ore (energy, glowing),
   gated by depth and rarity.
-- **Mining & building** with reach limits, hardness-based dig times, support
-  checks, and item drops that fall and magnetise to the player.
+- **Mining & building** with reach limits, hardness-based dig times, placement
+  support checks, and item drops that fall and magnetise to the player. You can
+  only mine **exposed** blocks (one block deep at a time), so no reaching through
+  solid rock.
 - **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, a fabricator with
   recipes (Hull Plating, Neon Glass, Med-Cells, a replacement Blaster…).
 - **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and

@@ -140,6 +140,10 @@ func _try_mine(dt: float) -> void:
 	var id: int = Game.world.get_tile(t)
 	if not Tiles.is_solid(id):
 		return
+	# only mine blocks exposed to open space, so you can't dig more than one
+	# block deep into solid terrain at a time
+	if not _is_exposed(t):
+		return
 	if t != _mine_target:
 		_mine_target = t
 		_mine_progress = 0.0
@@ -182,6 +186,14 @@ func _try_place(item_id: String) -> void:
 func _has_support(t: Vector2i) -> bool:
 	for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 		if Tiles.is_solid(Game.world.get_tile(t + o)):
+			return true
+	return false
+
+func _is_exposed(t: Vector2i) -> bool:
+	# true if any orthogonal neighbour is open (air), i.e. the block has a face
+	# the drill can actually reach
+	for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if not Tiles.is_solid(Game.world.get_tile(t + o)):
 			return true
 	return false
 
@@ -230,6 +242,8 @@ func _draw() -> void:
 		return
 	var top_left := Vector2(t.x * World.TILE, t.y * World.TILE) - global_position
 	var col := Color(0.18, 1.0, 0.85, 0.5)
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+	if Tiles.is_solid(Game.world.get_tile(t)) and not _is_exposed(t):
+		col = Color(0.5, 0.5, 0.55, 0.3)   # buried: too deep to mine
+	elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		col = Color(1.0, 0.2, 0.6, 0.6)
 	draw_rect(Rect2(top_left, Vector2(World.TILE, World.TILE)), col, false, 1.0)
