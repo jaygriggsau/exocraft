@@ -40,7 +40,7 @@ func _physics_process(dt: float) -> void:
 		queue_free()
 		return
 	if _from_player:
-		_hit_group("enemies")
+		_hit_group("creatures")
 	else:
 		_hit_player()
 

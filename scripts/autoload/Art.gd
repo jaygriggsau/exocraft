@@ -227,6 +227,11 @@ func _build_sprites() -> void:
 	_sprites["player"] = ImageTexture.create_from_image(_make_player())
 	_sprites["crawler"] = ImageTexture.create_from_image(_make_crawler())
 	_sprites["drone"] = ImageTexture.create_from_image(_make_drone())
+	_sprites["grazer"] = ImageTexture.create_from_image(_make_grazer())
+	_sprites["hopper"] = ImageTexture.create_from_image(_make_hopper())
+	_sprites["floater"] = ImageTexture.create_from_image(_make_floater())
+	_sprites["stalker"] = ImageTexture.create_from_image(_make_stalker())
+	_sprites["spitter"] = ImageTexture.create_from_image(_make_spitter())
 	_sprites["bolt"] = ImageTexture.create_from_image(_make_bolt())
 	_sprites["star"] = ImageTexture.create_from_image(_make_starfield())
 	_sprites["sun"] = ImageTexture.create_from_image(_make_disc(Color("ffe8a8"), Color("ff9a3a")))
@@ -296,6 +301,82 @@ func _make_drone() -> Image:
 	img.set_pixel(6, 6, eye.lightened(0.4))
 	_rect(img, 0, 6, 2, 2, sh_l)        # side thrusters
 	_rect(img, 12, 6, 2, 2, sh_l)
+	return img
+
+func _make_grazer() -> Image:
+	# 20x14 docile six-legged grazer
+	var img := _new_image(20, 14)
+	var body := Color("9aa884")
+	var dark := Color("5f6c49")
+	_rect(img, 3, 4, 13, 6, body)
+	_rect(img, 2, 5, 2, 4, body)        # rump
+	_rect(img, 15, 3, 5, 5, body)       # head
+	_rect(img, 19, 5, 1, 2, dark)       # snout
+	img.set_pixel(17, 5, Color("20242a"))   # eye
+	_rect(img, 4, 2, 2, 2, dark)        # back fins
+	_rect(img, 8, 1, 2, 3, dark)
+	for lx in [4, 8, 12, 15]:
+		_rect(img, lx, 10, 2, 4, dark)
+	return img
+
+func _make_hopper() -> Image:
+	# 12x12 small skittish hopper
+	var img := _new_image(12, 12)
+	var body := Color("b06ad0")
+	var dark := Color("6f3f8f")
+	_rect(img, 3, 3, 6, 5, body)
+	img.set_pixel(4, 5, Color("20242a"))
+	img.set_pixel(7, 5, Color("20242a"))
+	_rect(img, 2, 8, 2, 4, dark)        # big folded legs
+	_rect(img, 8, 8, 2, 4, dark)
+	_rect(img, 4, 9, 4, 3, body)
+	return img
+
+func _make_floater() -> Image:
+	# 16x18 drifting jelly-floater
+	var img := _new_image(16, 18)
+	var bell := Color("6fd0e0")
+	var bell_l := Color("aef0ff")
+	for y in 8:
+		var ww := 14 - absi(4 - y)
+		_rect(img, 8 - ww / 2, y, ww, 1, bell if y % 2 == 0 else bell_l)
+	_rect(img, 5, 8, 6, 1, bell_l)
+	for tx in [4, 7, 10]:               # tentacles
+		_rect(img, tx, 9, 1, 8, bell)
+	img.set_pixel(6, 4, Color("20242a"))
+	img.set_pixel(9, 4, Color("20242a"))
+	return img
+
+func _make_stalker() -> Image:
+	# 22x12 sleek territorial predator
+	var img := _new_image(22, 12)
+	var body := Color("3a2350")
+	var body_l := Color("5a3a78")
+	var eye := Color("ff4d4d")
+	_rect(img, 2, 5, 16, 4, body)
+	_rect(img, 3, 5, 14, 1, body_l)
+	_rect(img, 16, 3, 6, 5, body)       # head
+	_rect(img, 20, 5, 2, 2, eye)        # eye
+	for sx in [5, 8, 11, 14]:           # back spikes
+		_rect(img, sx, 3, 1, 2, body_l)
+	for lx in [4, 8, 12, 15]:           # legs
+		_rect(img, lx, 9, 2, 3, body)
+	return img
+
+func _make_spitter() -> Image:
+	# 18x14 squat ranged spitter
+	var img := _new_image(18, 14)
+	var body := Color("4a6a3a")
+	var body_l := Color("6f9a52")
+	var eye := Color("ffd23a")
+	_rect(img, 3, 4, 12, 8, body)
+	_rect(img, 4, 4, 10, 2, body_l)
+	_rect(img, 13, 6, 4, 3, body_l)     # snout/mouth
+	_rect(img, 15, 7, 2, 1, Color("20242a"))   # mouth slit
+	_rect(img, 9, 3, 3, 3, body)        # eye bump
+	_rect(img, 10, 4, 2, 2, eye)
+	for lx in [3, 13]:
+		_rect(img, lx, 11, 3, 3, body)
 	return img
 
 func _make_bolt() -> Image:

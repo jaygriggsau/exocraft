@@ -73,9 +73,14 @@ godot --path .
   from raw drops), then Alloy Plate, Circuit Board, Conduit, Composite Panel and
   Nanocore (combined from those). Buildables and gear (Hull Plating, Neon Glass,
   the Blaster…) are crafted from these components.
-- **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and
-  flying **Drones** (drift through the air toward you), spawned in a ring just
-  off-screen up to a cap. They drop scrap / energy cores.
+- **Alien fauna** (data-driven `Creature` system, two AI modes):
+  - **Passive** animals wander and flee when hurt — biome-tinted **Grazers**,
+    skittish **Hoppers**, and drifting **Floaters** (drop biomass / energy).
+  - **Territorial** animals roam but only attack once you enter their range —
+    **Crawlers**, night **Stalkers**, ranged **Spitters**, and flying **Drones**
+    (drop scrap / ores). Peaceful mode (`P`) clears these but leaves the passive
+    animals roaming.
+  - Spawned in a ring just off-screen up to a cap; you can hunt any of them.
 - **Animated player**: idle breathing bob, a 4-frame run cycle, and jump / fall
   poses, all built from runtime-generated frames driven by an `AnimatedSprite2D`.
 - **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
