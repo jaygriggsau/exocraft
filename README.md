@@ -95,6 +95,11 @@ godot --path .
   buttons, out-of-combat health regeneration, `Shift` to sprint, an `F11`
   fullscreen toggle, a held-item name label above the hotbar, hover tooltips in
   the cargo grid, and a low-health red vignette.
+- **Underground fog of war**: a cloudy murk hides the underground until you
+  explore it, clearing in a radius around the player and staying revealed.
+- **Responsive UI**: a fully anchored HUD that lays out correctly on any
+  resolution / aspect ratio (1080p, 1440p, 4K, ultrawide), with a large
+  zoomed-in view and chunky pixel UI.
 - **Day/night cycle + dynamic lighting** (high-end):
   - A timed sun and moon arc across a **shader sky** that transitions
     dawn → day → dusk → night, with a cyberpunk-magenta twilight glow and stars

@@ -57,7 +57,7 @@ func _ready() -> void:
 	add_child(sprite)
 
 	var cam := Camera2D.new()
-	cam.zoom = Vector2(3, 3)
+	cam.zoom = Vector2(4.5, 4.5)
 	cam.position_smoothing_enabled = true
 	cam.position_smoothing_speed = 8.0
 	add_child(cam)

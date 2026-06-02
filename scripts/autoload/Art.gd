@@ -19,6 +19,9 @@ var _player_frames: SpriteFrames
 var _creature_frames := {}       # species name -> SpriteFrames
 var decor_tileset: TileSet
 var decor_source_id := 0
+var fog_tileset: TileSet
+var fog_source_id := 0
+const FOG_VARIANTS := 3
 var _tree_cache := {}    # "biome_seed" -> ImageTexture (each tree is unique)
 
 # decor tile ids (atlas columns in the decor tileset)
@@ -33,6 +36,7 @@ func _ready() -> void:
 	_build_light_texture()
 	_build_player_frames()
 	_build_decor_tileset()
+	_build_fog_tileset()
 	_build_creature_frames()
 
 # ---------------------------------------------------------------------------
@@ -615,6 +619,47 @@ func _build_decor_tileset() -> void:
 
 func decor_atlas_coords(id: int) -> Vector2i:
 	return Vector2i(id, 0)
+
+# ---------------------------------------------------------------------------
+# Fog of war (cloudy murk over unexplored underground; non-solid)
+# ---------------------------------------------------------------------------
+func _make_fog_image(v: int) -> Image:
+	var img := _new_image(TS, TS)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4000 + v
+	var base := Color(0.05, 0.07, 0.13)
+	for y in TS:
+		for x in TS:
+			img.set_pixel(x, y, Color(base.r, base.g, base.b, rng.randf_range(0.86, 0.95)))
+	# a few lighter/darker cloud clumps for texture
+	for c in 5:
+		var cx := rng.randi_range(1, TS - 3)
+		var cy := rng.randi_range(1, TS - 3)
+		var lighter := rng.randf() < 0.5
+		var col := base.lightened(0.12) if lighter else base.darkened(0.4)
+		for i in 4:
+			var px := clampi(cx + rng.randi_range(0, 2), 0, TS - 1)
+			var py := clampi(cy + rng.randi_range(0, 2), 0, TS - 1)
+			img.set_pixel(px, py, Color(col.r, col.g, col.b, rng.randf_range(0.85, 0.95)))
+	return img
+
+func _build_fog_tileset() -> void:
+	var atlas := _new_image(FOG_VARIANTS * TS, TS)
+	for v in FOG_VARIANTS:
+		atlas.blit_rect(_make_fog_image(v), Rect2i(0, 0, TS, TS), Vector2i(v * TS, 0))
+	var tex := ImageTexture.create_from_image(atlas)
+	var ts := TileSet.new()
+	ts.tile_size = Vector2i(TS, TS)
+	var src := TileSetAtlasSource.new()
+	src.texture = tex
+	src.texture_region_size = Vector2i(TS, TS)
+	fog_source_id = ts.add_source(src, 0)
+	for v in FOG_VARIANTS:
+		src.create_tile(Vector2i(v, 0))
+	fog_tileset = ts
+
+func fog_atlas_coords(v: int) -> Vector2i:
+	return Vector2i(v, 0)
 
 # ---------------------------------------------------------------------------
 # Alien trees (one tall sprite per biome, base at the bottom centre)

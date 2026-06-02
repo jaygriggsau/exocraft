@@ -23,6 +23,9 @@ enum { TUNDRA, DUNES, WASTES, JUNGLE }
 
 var tilemap: TileMapLayer
 var decor_map: TileMapLayer         # non-solid surface decorations
+var fog_map: TileMapLayer           # fog of war over unexplored underground
+var _explored := {}                 # Vector2i tile -> true (revealed)
+var _last_reveal := Vector2i(999999, 999999)
 var chunks := {}                    # Vector2i -> PackedInt32Array
 var _loaded := {}                   # Vector2i -> true (currently rendered)
 var _chunk_lights := {}             # Vector2i -> Array[PointLight2D]
@@ -50,6 +53,11 @@ func _ready() -> void:
 	decor_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	decor_map.z_index = 1               # in front of terrain, behind the player
 	add_child(decor_map)
+	fog_map = TileMapLayer.new()
+	fog_map.tile_set = Art.fog_tileset
+	fog_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	fog_map.z_index = 3                 # clouds terrain + creatures until explored
+	add_child(fog_map)
 
 func _setup_noise() -> void:
 	var s := Game.world_seed
@@ -89,11 +97,56 @@ func chunk_of_tile(t: Vector2i) -> Vector2i:
 func _physics_process(_dt: float) -> void:
 	if Game.player == null:
 		return
-	var center := chunk_of_tile(world_to_tile(Game.player.global_position))
+	var ptile := world_to_tile(Game.player.global_position)
+	if ptile != _last_reveal:
+		_last_reveal = ptile
+		_reveal_around(ptile)
+	var center := chunk_of_tile(ptile)
 	if center == _last_center:
 		return
 	_last_center = center
 	_stream(center)
+
+const REVEAL_RADIUS := 11
+
+func _reveal_around(c: Vector2i) -> void:
+	# clear fog within a circle of the player (underground only); stays revealed
+	for dy in range(-REVEAL_RADIUS, REVEAL_RADIUS + 1):
+		for dx in range(-REVEAL_RADIUS, REVEAL_RADIUS + 1):
+			if dx * dx + dy * dy > REVEAL_RADIUS * REVEAL_RADIUS:
+				continue
+			var t := Vector2i(c.x + dx, c.y + dy)
+			if _explored.has(t):
+				continue
+			if t.y <= surface_height(t.x) + 2:
+				continue
+			_explored[t] = true
+			fog_map.erase_cell(t)
+
+func _fog_chunk(cc: Vector2i) -> void:
+	var oy := cc.y * CHUNK
+	if oy + CHUNK <= -8:                 # purely sky chunks never need fog
+		return
+	var ox := cc.x * CHUNK
+	for lx in CHUNK:
+		var tx := ox + lx
+		var fog_top := surface_height(tx) + 3
+		for ly in CHUNK:
+			var ty := oy + ly
+			if ty < fog_top:
+				continue
+			var t := Vector2i(tx, ty)
+			if _explored.has(t):
+				continue
+			var v: int = absi(tx * 49297 + ty * 233) % Art.FOG_VARIANTS
+			fog_map.set_cell(t, Art.fog_source_id, Art.fog_atlas_coords(v))
+
+func _unfog_chunk(cc: Vector2i) -> void:
+	var ox := cc.x * CHUNK
+	var oy := cc.y * CHUNK
+	for ly in CHUNK:
+		for lx in CHUNK:
+			fog_map.erase_cell(Vector2i(ox + lx, oy + ly))
 
 func _stream(center: Vector2i) -> void:
 	var want := {}
@@ -105,12 +158,14 @@ func _stream(center: Vector2i) -> void:
 		if not _loaded.has(cc):
 			_render_chunk(cc)
 			_decorate_chunk(cc)
+			_fog_chunk(cc)
 			_loaded[cc] = true
 	# unload chunks that drifted out of range (data is kept in `chunks`)
 	for cc in _loaded.keys():
 		if not want.has(cc):
 			_erase_chunk(cc)
 			_undecorate_chunk(cc)
+			_unfog_chunk(cc)
 			_loaded.erase(cc)
 
 	# stream glowing-block lights for just the nearest chunks (perf)
