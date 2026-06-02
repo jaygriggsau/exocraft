@@ -183,6 +183,27 @@ func _try_mine(dt: float) -> bool:
 	var t := _target_tile()
 	if not _in_reach(t):
 		return false
+
+	# harvesting an alien tree (non-solid; no block erosion in the FX)
+	var tree = Game.world.tree_at(t)
+	if tree != null:
+		if t != _mine_target:
+			_mine_target = t
+			_mine_progress = 0.0
+		_mine_progress += dt
+		var hdur: float = MINE_BASE * tree.harvest_time
+		var hfrac := clampf(_mine_progress / hdur, 0.0, 1.0)
+		var hcenter: Vector2 = Game.world.tile_to_world_center(t)
+		_mine_dir = (hcenter - global_position).normalized()
+		_mining_now = true
+		var hcol := _tree_color(tree.biome)
+		fx.set_state(true, t, global_position + _mine_dir * 6.0, hcol, hcol, hfrac, false)
+		tree.set_harvest(hfrac)
+		if _mine_progress >= hdur:
+			_mine_progress = 0.0
+			Game.world.harvest_tree(tree, t)
+		return true
+
 	var id: int = Game.world.get_tile(t)
 	if not Tiles.is_solid(id):
 		return false
@@ -214,6 +235,13 @@ func _try_mine(dt: float) -> bool:
 func _mine_accent(d: Dictionary) -> Color:
 	# the gun/particle colour: prefer a tile's glow/ore tint, else its accent
 	return d.get("light", d.get("ore", d.get("accent", d.base)))
+
+func _tree_color(biome: int) -> Color:
+	match biome:
+		World.TUNDRA: return Color("8fe8ff")
+		World.DUNES: return Color("a7c08a")
+		World.JUNGLE: return Color("7aff3a")
+		_: return Color("ff4df0")
 
 func _spawn_drop(t: Vector2i, item_id: String) -> void:
 	if item_id == "":

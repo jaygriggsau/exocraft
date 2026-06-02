@@ -18,6 +18,7 @@ const ENERGY := 9     # ore (glowing)
 const PLATING := 10   # crafted building block
 const NEON := 11      # crafted neon glass
 const DARKROCK := 12  # deep biome stone
+const WOOD := 13      # harvested/crafted alien wood
 
 ## id -> definition dictionary.
 ## Fields:
@@ -43,6 +44,7 @@ var DEFS := {
 	PLATING: {"name": "Hull Plating", "item": "plating",     "style": "plating", "base": Color("4a4e6b"), "accent": Color("7a80b0"), "glow": false, "hardness": 2.0},
 	NEON:    {"name": "Neon Glass",   "item": "neon_glass",  "style": "neon",    "base": Color("10131f"), "accent": Color("ff2bd6"), "glow": true,  "light": Color("ff2bd6"), "light_energy": 1.1, "hardness": 1.0},
 	DARKROCK:{"name": "Obsidite",     "item": "darkrock",    "style": "block",   "base": Color("1a1320"), "accent": Color("2e2138"), "glow": false, "hardness": 4.0},
+	WOOD:    {"name": "Bio-Timber",   "item": "wood",        "style": "plating", "base": Color("584438"), "accent": Color("7c6b4e"), "glow": false, "hardness": 1.5},
 }
 
 func def(id: int) -> Variant:

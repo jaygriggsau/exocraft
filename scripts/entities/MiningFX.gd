@@ -16,6 +16,7 @@ var _muzzle := Vector2.ZERO
 var _base := Color.WHITE
 var _accent := Color.WHITE
 var _progress := 0.0
+var _dissolve := true
 
 var _perm: Array = []        # deterministic shuffle of the 256 tile pixels
 var _parts: Array = []       # live particles
@@ -40,13 +41,14 @@ func _ready() -> void:
 	_light.energy = 0.0
 	add_child(_light)
 
-func set_state(a: bool, tile: Vector2i, muzzle: Vector2, base: Color, accent: Color, progress: float) -> void:
+func set_state(a: bool, tile: Vector2i, muzzle: Vector2, base: Color, accent: Color, progress: float, dissolve: bool = true) -> void:
 	active = a
 	_tile = tile
 	_muzzle = muzzle
 	_base = base
 	_accent = accent
 	_progress = progress
+	_dissolve = dissolve
 
 func _process(dt: float) -> void:
 	if active:
@@ -109,13 +111,14 @@ func _draw() -> void:
 		var r := 4.5 * fl
 		draw_line(_muzzle - Vector2(r, 0), _muzzle + Vector2(r, 0), Color(c.r, c.g, c.b, 0.45), 1.0)
 		draw_line(_muzzle - Vector2(0, r), _muzzle + Vector2(0, r), Color(c.r, c.g, c.b, 0.45), 1.0)
-		# erode the block pixel-by-pixel in step with progress
-		var removed := int(_progress * 255.0)
-		var ox := _tile.x * TILE
-		var oy := _tile.y * TILE
-		for k in removed:
-			var px: Vector2i = _perm[k]
-			draw_rect(Rect2(ox + px.x, oy + px.y, 1, 1), Color(0, 0, 0, 0.55), true)
+		# erode the block pixel-by-pixel in step with progress (blocks only)
+		if _dissolve:
+			var removed := int(_progress * 255.0)
+			var ox := _tile.x * TILE
+			var oy := _tile.y * TILE
+			for k in removed:
+				var px: Vector2i = _perm[k]
+				draw_rect(Rect2(ox + px.x, oy + px.y, 1, 1), Color(0, 0, 0, 0.55), true)
 
 	for p in _parts:
 		var a: float = clampf(p.life / p.maxlife, 0.0, 1.0)

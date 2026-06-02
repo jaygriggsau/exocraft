@@ -22,9 +22,14 @@ const DEEP_Y := 110                # below here it becomes the Obsidite biome
 enum { TUNDRA, DUNES, WASTES, JUNGLE }
 
 var tilemap: TileMapLayer
+var decor_map: TileMapLayer         # non-solid surface decorations
 var chunks := {}                    # Vector2i -> PackedInt32Array
 var _loaded := {}                   # Vector2i -> true (currently rendered)
 var _chunk_lights := {}             # Vector2i -> Array[PointLight2D]
+var _chunk_decor := {}              # Vector2i -> Array[Vector2i] decor cells
+var _chunk_trees := {}              # Vector2i -> Array[AlienTree]
+var _tree_at := {}                  # Vector2i tile -> AlienTree (harvest lookup)
+var _tree_removed := {}             # world tile-x -> true (harvested, don't respawn)
 var _last_center := Vector2i(999999, 999999)
 
 var _height_noise := FastNoiseLite.new()
@@ -40,6 +45,11 @@ func _ready() -> void:
 	tilemap.tile_set = Art.tileset
 	tilemap.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(tilemap)
+	decor_map = TileMapLayer.new()
+	decor_map.tile_set = Art.decor_tileset
+	decor_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	decor_map.z_index = 1               # in front of terrain, behind the player
+	add_child(decor_map)
 
 func _setup_noise() -> void:
 	var s := Game.world_seed
@@ -94,11 +104,13 @@ func _stream(center: Vector2i) -> void:
 	for cc in want.keys():
 		if not _loaded.has(cc):
 			_render_chunk(cc)
+			_decorate_chunk(cc)
 			_loaded[cc] = true
 	# unload chunks that drifted out of range (data is kept in `chunks`)
 	for cc in _loaded.keys():
 		if not want.has(cc):
 			_erase_chunk(cc)
+			_undecorate_chunk(cc)
 			_loaded.erase(cc)
 
 	# stream glowing-block lights for just the nearest chunks (perf)
@@ -137,6 +149,116 @@ func _free_chunk_lights(cc: Vector2i) -> void:
 		if is_instance_valid(l):
 			l.queue_free()
 	_chunk_lights.erase(cc)
+
+# ---------------------------------------------------------------------------
+# Surface decorations + harvestable trees
+# ---------------------------------------------------------------------------
+func _rand01(a: int, salt: int) -> float:
+	var h: int = (a * 73856093) ^ (salt * 19349663) ^ (Game.world_seed * 83492791)
+	h = (h ^ (h >> 13)) * 1274126177
+	return float(h & 0x7fffffff) / 2147483647.0
+
+func _tree_chance(biome: int) -> float:
+	match biome:
+		JUNGLE: return 0.16
+		WASTES: return 0.11
+		TUNDRA: return 0.06
+		_: return 0.04   # dunes are sparse
+
+func _biome_plant(biome: int, tx: int) -> int:
+	match biome:
+		TUNDRA: return Art.TUFT_TUNDRA
+		DUNES: return Art.TUFT_DUNES
+		JUNGLE: return Art.MUSHROOM if _rand01(tx, 3) < 0.3 else Art.TUFT_JUNGLE
+		_: return Art.FLOWER if _rand01(tx, 3) < 0.25 else Art.TUFT_WASTES
+
+func _decorate_chunk(cc: Vector2i) -> void:
+	var oy := cc.y * CHUNK
+	# only surface-band chunks can hold decorations
+	if oy > 24 or oy + CHUNK < -24:
+		return
+	var ox := cc.x * CHUNK
+	var cells: Array = []
+	var trees: Array = []
+	var last_tree_lx := -10
+	for lx in CHUNK:
+		var tx := ox + lx
+		var surf_y := surface_tile_y(tx)
+		var deco_y := surf_y - 1
+		if deco_y < oy or deco_y >= oy + CHUNK:
+			continue
+		var biome := biome_at(tx)
+		if _rand01(tx, 1) < _tree_chance(biome) and lx - last_tree_lx >= 3 and not _tree_removed.has(tx):
+			_spawn_tree(tx, surf_y, biome, trees)
+			last_tree_lx = lx
+			continue
+		var r := _rand01(tx, 2)
+		var decor_id := -1
+		if r < 0.40:
+			decor_id = _biome_plant(biome, tx)
+		elif r < 0.50:
+			decor_id = Art.ROCK
+		if decor_id >= 0:
+			var cell := Vector2i(tx, deco_y)
+			decor_map.set_cell(cell, Art.decor_source_id, Art.decor_atlas_coords(decor_id))
+			cells.append(cell)
+	_chunk_decor[cc] = cells
+	_chunk_trees[cc] = trees
+
+func _spawn_tree(tx: int, surf_y: int, biome: int, trees: Array) -> void:
+	var occ: Array = []
+	for ty in range(surf_y - 1, surf_y - 5, -1):
+		occ.append(Vector2i(tx, ty))
+	for ddx in [-1, 1]:
+		occ.append(Vector2i(tx + ddx, surf_y - 3))
+		occ.append(Vector2i(tx + ddx, surf_y - 4))
+	var tr := AlienTree.new()
+	tr.occupied = occ
+	tr.drops = _tree_drops(biome)
+	tr.harvest_time = 6.0
+	tr.setup(biome, Vector2(tx * TILE + TILE / 2.0, surf_y * TILE), tx)
+	add_child(tr)
+	tr.z_index = 1
+	for c in occ:
+		_tree_at[c] = tr
+	trees.append(tr)
+
+func _tree_drops(biome: int) -> Array:
+	var drops: Array = [["wood", 2 + randi() % 3]]
+	if biome == JUNGLE:
+		drops.append(["biomass", 1 + randi() % 2])
+	elif biome == TUNDRA:
+		drops.append(["ice", 1])
+	return drops
+
+func _undecorate_chunk(cc: Vector2i) -> void:
+	for cell in _chunk_decor.get(cc, []):
+		decor_map.erase_cell(cell)
+	_chunk_decor.erase(cc)
+	for tr in _chunk_trees.get(cc, []):
+		if is_instance_valid(tr):
+			for c in tr.occupied:
+				if _tree_at.get(c) == tr:
+					_tree_at.erase(c)
+			tr.queue_free()
+	_chunk_trees.erase(cc)
+
+func tree_at(t: Vector2i) -> AlienTree:
+	return _tree_at.get(t)
+
+func harvest_tree(tree: AlienTree, _t: Vector2i) -> void:
+	_tree_removed[tree.column] = true
+	for c in tree.occupied:
+		if _tree_at.get(c) == tree:
+			_tree_at.erase(c)
+	var cc := chunk_of_tile(tree.occupied[0]) if not tree.occupied.is_empty() else Vector2i.ZERO
+	if _chunk_trees.has(cc):
+		_chunk_trees[cc].erase(tree)
+	for d in tree.drops:
+		var pk := ItemPickup.new()
+		pk.setup(d[0], d[1], tree.global_position + Vector2(randf_range(-6, 6), -20))
+		add_child(pk)
+	tree.queue_free()
 
 func _render_chunk(cc: Vector2i) -> void:
 	var data := _get_chunk(cc)

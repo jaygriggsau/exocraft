@@ -26,9 +26,11 @@ var ITEMS := {
 	"biomass":     {"name": "Biomass",       "type": BLOCK, "max_stack": 999, "tile": Tiles.JUNGLE,   "color": Color("a6ff3a")},
 	"sand":        {"name": "Glass-Sand",    "type": BLOCK, "max_stack": 999, "tile": Tiles.SAND,     "color": Color("d9c27a")},
 	"darkrock":    {"name": "Obsidite",      "type": BLOCK, "max_stack": 999, "tile": Tiles.DARKROCK, "color": Color("2e2138")},
+	"wood_block":  {"name": "Bio-Timber",    "type": BLOCK, "max_stack": 999, "tile": Tiles.WOOD,     "color": Color("7c6b4e")},
 	"plating":     {"name": "Hull Plating",  "type": BLOCK, "max_stack": 999, "tile": Tiles.PLATING,  "color": Color("7a80b0")},
 	"neon_glass":  {"name": "Neon Glass",    "type": BLOCK, "max_stack": 999, "tile": Tiles.NEON,     "color": Color("ff2bd6")},
 
+	"wood":        {"name": "Xylo-Timber",   "type": MATERIAL, "max_stack": 999, "color": Color("9a7a52")},
 	"crystal":     {"name": "Vyrite Crystal","type": MATERIAL, "max_stack": 999, "color": Color("ff4df0")},
 	"metal_ore":   {"name": "Ferralite",     "type": MATERIAL, "max_stack": 999, "color": Color("c4c4d6")},
 	"energy_core": {"name": "Ion Core",      "type": MATERIAL, "max_stack": 999, "color": Color("2dffff")},
@@ -43,6 +45,7 @@ var RECIPES := [
 	{"out": ["med_cell", 1],   "cost": [["biomass", 4], ["crystal", 1]]},
 	{"out": ["blaster", 1],    "cost": [["metal_ore", 6], ["crystal", 3], ["energy_core", 2]]},
 	{"out": ["stone", 1],      "cost": [["darkrock", 1]]},
+	{"out": ["wood_block", 4], "cost": [["wood", 2]]},
 ]
 
 func get_item(id: String) -> Variant:
