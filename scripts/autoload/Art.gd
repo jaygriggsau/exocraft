@@ -177,11 +177,13 @@ func _make_item_icon(item_id: String) -> Image:
 	var c: Color = d.color
 	match item_id:
 		"pickaxe":
-			# Drill: handle + glowing bit.
-			_rect(img, 7, 4, 2, 9, Color("6f74a0"))
-			_rect(img, 4, 11, 8, 3, Color("4a4e6b"))
-			_rect(img, 6, 13, 4, 2, c)
-			img.set_pixel(7, 14, c.lightened(0.4))
+			# Particle gun: body, barrel and a glowing emitter tip.
+			_rect(img, 3, 7, 7, 4, Color("4a4e6b"))     # body
+			_rect(img, 4, 11, 3, 3, Color("3a3e5b"))    # grip
+			_rect(img, 10, 8, 3, 2, Color("6f74a0"))    # barrel
+			_rect(img, 13, 7, 1, 4, c)                  # emitter
+			img.set_pixel(13, 8, c.lightened(0.5))
+			_rect(img, 5, 8, 2, 2, c)                   # power cell
 		"blaster":
 			# Side-on pistol shape.
 			_rect(img, 3, 6, 9, 3, Color("4a4e6b"))

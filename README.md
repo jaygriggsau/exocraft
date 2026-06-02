@@ -54,6 +54,9 @@ godot --path .
   support checks, and item drops that fall and magnetise to the player. You can
   only mine **exposed** blocks (one block deep at a time), so no reaching through
   solid rock.
+- **Particle-gun mining**: a beam from the gun dissolves the target block
+  pixel-by-pixel as you mine, and the dissolved bits stream back into the gun as
+  glowing particles, with a light at the impact point.
 - **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, a fabricator with
   recipes (Hull Plating, Neon Glass, Med-Cells, a replacement Blaster…).
 - **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and

@@ -16,6 +16,7 @@ const INVULN := 0.6
 
 var inv: Inventory
 var sprite: AnimatedSprite2D
+var fx: MiningFX
 var facing := 1
 var _anim := ""
 var _mine_target := Vector2i(2147483647, 0)
@@ -70,6 +71,10 @@ func _ready() -> void:
 	aura.scale = Vector2(0.45, 0.45)
 	add_child(aura)
 
+	# the particle-gun mining effect lives in world space
+	fx = MiningFX.new()
+	Game.world.add_child(fx)
+
 	Game.player_died.connect(_on_died)
 
 func _starting_kit() -> void:
@@ -104,7 +109,9 @@ func _physics_process(dt: float) -> void:
 	move_and_slide()
 	_update_anim()
 
-	if not Game.ui_blocking:
+	if Game.ui_blocking:
+		_stop_mining()
+	else:
 		_handle_interaction(dt)
 	queue_redraw()
 
@@ -133,11 +140,13 @@ func _handle_interaction(dt: float) -> void:
 			ItemDB.WEAPON: _try_fire(sel)
 			ItemDB.CONSUMABLE: _try_consume(sel)
 
-	if mining:
-		_try_mine(dt)
-	else:
-		_mine_target = Vector2i(2147483647, 0)
-		_mine_progress = 0.0
+	if not (mining and _try_mine(dt)):
+		_stop_mining()
+
+func _stop_mining() -> void:
+	_mine_target = Vector2i(2147483647, 0)
+	_mine_progress = 0.0
+	fx.set_state(false, Vector2i.ZERO, Vector2.ZERO, Color.WHITE, Color.WHITE, 0.0)
 
 func _target_tile() -> Vector2i:
 	return Game.world.world_to_tile(get_global_mouse_position())
@@ -146,25 +155,39 @@ func _in_reach(t: Vector2i) -> bool:
 	var c: Vector2 = Game.world.tile_to_world_center(t)
 	return global_position.distance_to(c) <= REACH * World.TILE
 
-func _try_mine(dt: float) -> void:
+func _try_mine(dt: float) -> bool:
 	var t := _target_tile()
 	if not _in_reach(t):
-		return
+		return false
 	var id: int = Game.world.get_tile(t)
 	if not Tiles.is_solid(id):
-		return
+		return false
 	# only mine blocks exposed to open space, so you can't dig more than one
 	# block deep into solid terrain at a time
 	if not _is_exposed(t):
-		return
+		return false
 	if t != _mine_target:
 		_mine_target = t
 		_mine_progress = 0.0
 	_mine_progress += dt
-	if _mine_progress >= MINE_BASE * Tiles.hardness(id):
+
+	var dur: float = MINE_BASE * Tiles.hardness(id)
+	var frac := clampf(_mine_progress / dur, 0.0, 1.0)
+	var d = Tiles.def(id)
+	# gun muzzle just in front of the player, pointed at the block
+	var center: Vector2 = Game.world.tile_to_world_center(t)
+	var muzzle := global_position + (center - global_position).normalized() * 6.0
+	fx.set_state(true, t, muzzle, d.base, _mine_accent(d), frac)
+
+	if _mine_progress >= dur:
 		_mine_progress = 0.0
 		Game.world.set_tile(t, Tiles.AIR)
 		_spawn_drop(t, Tiles.drop_item(id))
+	return true
+
+func _mine_accent(d: Dictionary) -> Color:
+	# the gun/particle colour: prefer a tile's glow/ore tint, else its accent
+	return d.get("light", d.get("ore", d.get("accent", d.base)))
 
 func _spawn_drop(t: Vector2i, item_id: String) -> void:
 	if item_id == "":

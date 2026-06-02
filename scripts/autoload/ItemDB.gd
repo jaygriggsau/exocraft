@@ -16,7 +16,7 @@ enum { TOOL, WEAPON, BLOCK, CONSUMABLE, MATERIAL }
 ##   name, type, max_stack, color (icon tint / accent)
 ##   tile (BLOCK), damage/cooldown/speed (WEAPON), heal (CONSUMABLE)
 var ITEMS := {
-	"pickaxe":     {"name": "Plasma Drill",  "type": TOOL,       "max_stack": 1,   "color": Color("2dffff")},
+	"pickaxe":     {"name": "Particle Gun",  "type": TOOL,       "max_stack": 1,   "color": Color("2dffff")},
 	"blaster":     {"name": "Ion Blaster",   "type": WEAPON,     "max_stack": 1,   "color": Color("ff2bd6"), "damage": 12.0, "cooldown": 0.22, "speed": 360.0},
 	"med_cell":    {"name": "Med-Cell",      "type": CONSUMABLE, "max_stack": 20,  "color": Color("39ff88"), "heal": 40.0},
 
