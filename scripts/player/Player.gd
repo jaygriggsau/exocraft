@@ -4,6 +4,9 @@ extends CharacterBody2D
 ## all key off the currently selected hotbar item.
 
 const SPEED := 120.0
+const SPRINT_MULT := 1.7
+const REGEN_DELAY := 4.0            # seconds out of combat before health regens
+const REGEN_RATE := 7.0            # health per second
 const ACCEL := 1400.0
 const FRICTION := 1600.0
 const JUMP_VELOCITY := -270.0
@@ -30,6 +33,7 @@ var _mine_progress := 0.0
 var _place_cd := 0.0
 var _fire_cd := 0.0
 var _invuln := 0.0
+var _no_dmg := 0.0
 
 func _ready() -> void:
 	add_to_group("player")
@@ -97,10 +101,16 @@ func _physics_process(dt: float) -> void:
 	_fire_cd = maxf(0.0, _fire_cd - dt)
 	_invuln = maxf(0.0, _invuln - dt)
 
-	# horizontal movement
+	# regenerate health when out of combat
+	_no_dmg += dt
+	if _no_dmg >= REGEN_DELAY and Game.health < Game.max_health:
+		Game.heal_player(REGEN_RATE * dt)
+
+	# horizontal movement (Shift to sprint)
+	var spd := SPEED * (SPRINT_MULT if Input.is_action_pressed("sprint") else 1.0)
 	var dir := Input.get_axis("move_left", "move_right")
 	if dir != 0.0:
-		velocity.x = move_toward(velocity.x, dir * SPEED, ACCEL * dt)
+		velocity.x = move_toward(velocity.x, dir * spd, ACCEL * dt)
 		facing = signi(int(dir))
 		sprite.flip_h = facing < 0
 	else:
@@ -301,6 +311,7 @@ func take_damage(amount: float) -> void:
 	if _invuln > 0.0:
 		return
 	_invuln = INVULN
+	_no_dmg = 0.0
 	Game.damage_player(amount)
 	# knockback flash
 	modulate = Color(1, 0.5, 0.5)

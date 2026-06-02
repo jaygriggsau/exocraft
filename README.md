@@ -33,6 +33,9 @@ godot --path .
 | Select hotbar     | `1` – `0` or **mouse wheel**     |
 | Inventory + craft | `E` or `Tab`                     |
 | Peaceful mode     | `P` (toggle enemies on/off)      |
+| Sprint            | hold `Shift`                     |
+| Pause menu        | `Esc`                            |
+| Fullscreen        | `F11`                            |
 
 "Use selected item" depends on what is in the active hotbar slot:
 
@@ -69,6 +72,10 @@ godot --path .
 - **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
 - **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
   enemies) for relaxed building.
+- **Quality-of-life**: a pause menu (`Esc`) with Resume / Fullscreen / Enemies
+  buttons, out-of-combat health regeneration, `Shift` to sprint, an `F11`
+  fullscreen toggle, a held-item name label above the hotbar, hover tooltips in
+  the cargo grid, and a low-health red vignette.
 - **Day/night cycle + dynamic lighting** (high-end):
   - A timed sun and moon arc across a **shader sky** that transitions
     dawn → day → dusk → night, with a cyberpunk-magenta twilight glow and stars

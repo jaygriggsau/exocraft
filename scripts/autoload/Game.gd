@@ -38,6 +38,8 @@ func _setup_input() -> void:
 	_add_action("jump", [KEY_SPACE, KEY_W, KEY_UP])
 	_add_action("toggle_inventory", [KEY_E, KEY_TAB])
 	_add_action("toggle_enemies", [KEY_P])
+	_add_action("pause", [KEY_ESCAPE])
+	_add_action("sprint", [KEY_SHIFT])
 
 func _add_action(name: String, keys: Array) -> void:
 	if InputMap.has_action(name):

@@ -23,16 +23,36 @@ var _inv_slots := []
 var _inv_panel: Control
 var _craft_panel: Control
 var _craft_rows := []            # array of {button,recipe}
+var _sel_label: Label
+var _tip: Panel
+var _tip_label: Label
+var _vig_mat: ShaderMaterial
+var _pause_panel: Control
+
+const VIGNETTE_SHADER := """
+shader_type canvas_item;
+uniform float amount : hint_range(0.0, 1.0) = 0.0;
+void fragment() {
+	float d = distance(UV, vec2(0.5));
+	float v = smoothstep(0.25, 0.78, d);
+	COLOR = vec4(1.0, 0.1, 0.2, v * amount);
+}
+"""
 
 func _ready() -> void:
 	layer = 10
+	process_mode = Node.PROCESS_MODE_ALWAYS   # keep UI alive while the game is paused
 	_make_styleboxes()
 	_build_health()
 	_build_info()
 	_build_hotbar()
+	_build_selected_label()
 	_build_inventory()
 	_build_crafting()
+	_build_tooltip()
+	_build_vignette()
 	_build_death_label()
+	_build_pause()
 
 	Game.inventory_changed.connect(_refresh)
 	Game.health_changed.connect(_on_health)
@@ -48,6 +68,32 @@ func _process(_dt: float) -> void:
 		_info_label.text = "%s    depth %d" % [biome, maxi(0, depth)]
 	_clock_label.text = "Day %d  %s  %s" % [Game.day_count, Game.clock_string(), Game.day_phase()]
 	_peaceful_label.visible = not Game.enemies_enabled
+	_update_vignette()
+	_update_tooltip()
+
+func _update_vignette() -> void:
+	# red pulse that grows as health drops below ~35%
+	var ratio := Game.health / Game.max_health
+	var low := clampf((0.35 - ratio) / 0.35, 0.0, 1.0)
+	var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 180.0)
+	_vig_mat.set_shader_parameter("amount", low * pulse * 0.7)
+
+func _update_tooltip() -> void:
+	_tip.visible = false
+	if not _inv_panel.visible or Game.inventory == null:
+		return
+	var mp: Vector2 = _inv_panel.get_global_mouse_position()
+	for i in Inventory.SIZE:
+		var s: Dictionary = _inv_slots[i]
+		if s.panel.get_global_rect().has_point(mp):
+			var stack = Game.inventory.slots[i]
+			if stack != null:
+				var nm := ItemDB.name_of(stack.id)
+				_tip_label.text = "%s   x%d" % [nm, stack.count] if stack.count > 1 else nm
+				_tip.size = Vector2(_tip_label.get_minimum_size().x + 14, 22)
+				_tip.position = mp + Vector2(14, 14)
+				_tip.visible = true
+			return
 
 func _biome_name(b: int) -> String:
 	match b:
@@ -91,7 +137,7 @@ func _build_info() -> void:
 	_info_label.position = Vector2(16, 44)
 	add_child_control(_info_label)
 
-	var hint := _make_label("Move WAD/Arrows  •  Jump Space  •  L-Click use item  •  R-Click mine  •  1-0 / Scroll hotbar  •  E inventory  •  P peaceful", 11)
+	var hint := _make_label("Move WAD/Arrows  •  Shift sprint  •  Jump Space  •  L-Click use  •  R-Click mine  •  1-0/Scroll hotbar  •  E inventory  •  P peaceful  •  Esc pause  •  F11 fullscreen", 11)
 	hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	hint.position = Vector2(16, VH - 20)
 	add_child_control(hint)
@@ -180,6 +226,78 @@ func _recipe_text(r: Dictionary) -> String:
 		parts.append("%dx %s" % [c[1], ItemDB.name_of(c[0])])
 	return out + ", ".join(parts)
 
+func _build_selected_label() -> void:
+	# name of the currently held item, centred above the hotbar
+	_sel_label = _make_label("", 13)
+	_sel_label.modulate = Color("e8ecff")
+	_sel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sel_label.size = Vector2(VW, 18)
+	_sel_label.position = Vector2(0, VH - SLOT - 50)
+	add_child_control(_sel_label)
+
+func _build_tooltip() -> void:
+	_tip = Panel.new()
+	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.add_theme_stylebox_override("panel", _normal_sb)
+	_tip.visible = false
+	_tip.z_index = 5
+	add_child_control(_tip)
+	_tip_label = _make_label("", 12)
+	_tip_label.position = Vector2(7, 3)
+	_tip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.add_child(_tip_label)
+
+func _build_vignette() -> void:
+	var v := ColorRect.new()
+	v.position = Vector2.ZERO
+	v.size = Vector2(VW, VH)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = VIGNETTE_SHADER
+	_vig_mat = ShaderMaterial.new()
+	_vig_mat.shader = sh
+	_vig_mat.set_shader_parameter("amount", 0.0)
+	v.material = _vig_mat
+	add_child_control(v)
+
+func _build_pause() -> void:
+	_pause_panel = Control.new()
+	_pause_panel.visible = false
+	_pause_panel.z_index = 20
+	add_child_control(_pause_panel)
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.02, 0.05, 0.7)
+	dim.position = Vector2.ZERO
+	dim.size = Vector2(VW, VH)
+	_pause_panel.add_child(dim)
+	var title := _make_label("PAUSED", 34)
+	title.modulate = Color("2dffff")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.size = Vector2(VW, 40)
+	title.position = Vector2(0, VH / 2 - 150)
+	_pause_panel.add_child(title)
+	_add_pause_button("Resume", VH / 2 - 70, func(): _set_paused(false))
+	_add_pause_button("Toggle Fullscreen", VH / 2 - 20, _toggle_fullscreen)
+	_add_pause_button("Toggle Enemies", VH / 2 + 30, func(): Game.toggle_enemies())
+
+func _add_pause_button(text: String, y: int, cb: Callable) -> void:
+	var b := Button.new()
+	b.text = text
+	b.add_theme_font_size_override("font_size", 16)
+	b.size = Vector2(220, 40)
+	b.position = Vector2(VW / 2 - 110, y)
+	b.pressed.connect(cb)
+	_pause_panel.add_child(b)
+
+func _set_paused(p: bool) -> void:
+	get_tree().paused = p
+	_pause_panel.visible = p
+
+func _toggle_fullscreen() -> void:
+	var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+	DisplayServer.window_set_mode(
+		DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
+
 func _build_death_label() -> void:
 	_death_label = _make_label("SYSTEMS REBOOTING...", 28)
 	_death_label.modulate = Color("ff3b6b")
@@ -189,12 +307,19 @@ func _build_death_label() -> void:
 
 # ---------------------------------------------------------------------------
 func _unhandled_input(e: InputEvent) -> void:
+	if e.is_action_pressed("pause"):
+		_set_paused(not get_tree().paused)
+		return
 	if e is InputEventKey and e.pressed and not e.echo:
 		var k := (e as InputEventKey).physical_keycode
-		if k >= KEY_1 and k <= KEY_9:
+		if k == KEY_F11:
+			_toggle_fullscreen()
+		elif k >= KEY_1 and k <= KEY_9:
 			Game.inventory.select(k - KEY_1)
 		elif k == KEY_0:
 			Game.inventory.select(9)
+	if get_tree().paused:
+		return
 	if e is InputEventMouseButton and e.pressed:
 		# scroll wheel cycles the hotbar (up = left, down = right)
 		if e.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -225,6 +350,8 @@ func _refresh() -> void:
 		_fill_slot(_inv_slots[i], Game.inventory.slots[i], false)
 	for row in _craft_rows:
 		row.button.disabled = not Game.inventory.can_craft(row.recipe)
+	var sid := Game.inventory.selected_id()
+	_sel_label.text = ItemDB.name_of(sid) if sid != "" else ""
 
 func _fill_slot(s: Dictionary, stack, selected: bool) -> void:
 	s.panel.add_theme_stylebox_override("panel", _select_sb if selected else _normal_sb)
