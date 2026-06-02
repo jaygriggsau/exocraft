@@ -232,6 +232,15 @@ func _tree_drops(biome: int) -> Array:
 		drops.append(["ice", 1])
 	return drops
 
+func _clear_decor(cell: Vector2i) -> void:
+	# remove a surface decoration (grass tuft, rock, flower...) at this cell
+	if decor_map.get_cell_source_id(cell) == -1:
+		return
+	decor_map.erase_cell(cell)
+	var cc := chunk_of_tile(cell)
+	if _chunk_decor.has(cc):
+		_chunk_decor[cc].erase(cell)
+
 func _undecorate_chunk(cc: Vector2i) -> void:
 	for cell in _chunk_decor.get(cc, []):
 		decor_map.erase_cell(cell)
@@ -319,8 +328,10 @@ func set_tile(t: Vector2i, id: int) -> int:
 	if _loaded.has(cc):
 		if id == Tiles.AIR:
 			tilemap.erase_cell(t)
+			_clear_decor(t + Vector2i(0, -1))   # destroy a decoration resting on the mined block
 		else:
 			tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id, _tile_variant(t.x, t.y)))
+			_clear_decor(t)                     # a placed block covers any decoration here
 	# refresh block lights for this chunk if it is in the lit zone
 	if _chunk_lights.has(cc):
 		_free_chunk_lights(cc)
