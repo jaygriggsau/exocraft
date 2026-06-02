@@ -55,3 +55,32 @@ static func play(host: Node2D, sprite: Sprite2D) -> void:
 		t2.tween_property(sp, "position:y", sp.position.y - randf_range(10.0, 22.0), 0.5)
 		t2.parallel().tween_property(sp, "modulate:a", 0.0, 0.5)
 		t2.tween_callback(sp.queue_free)
+
+## Reverse of play(): the structure flares, collapses back into a seed and the
+## host is freed. Call from the entity's collapse_and_free().
+static func dismantle(host: Node2D, sprite: Sprite2D) -> void:
+	var h := float(sprite.texture.get_height())
+	var fl := PointLight2D.new()
+	fl.texture = Art.light_texture()
+	fl.color = Color("aef6ff")
+	fl.energy = 1.6
+	fl.scale = Vector2(0.7, 0.7)
+	fl.position = Vector2(0, -h / 2.0)
+	host.add_child(fl)
+	for i in 8:
+		var sp := Sprite2D.new()
+		sp.texture = Art.light_texture()
+		sp.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		sp.modulate = Color("aef6ff")
+		sp.scale = Vector2(0.07, 0.07)
+		sp.position = Vector2(randf_range(-9.0, 9.0), -randf_range(2.0, h * 0.7))
+		host.add_child(sp)
+		var t2 := host.create_tween()
+		t2.tween_property(sp, "position", Vector2(0, -8), 0.28)
+		t2.parallel().tween_property(sp, "modulate:a", 0.0, 0.3)
+		t2.tween_callback(sp.queue_free)
+	var tw := host.create_tween()
+	tw.tween_property(sprite, "modulate", Color(1.9, 2.0, 2.3), 0.12)
+	tw.tween_property(sprite, "scale", Vector2(0.0, 0.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(fl, "energy", 0.0, 0.32)
+	tw.chain().tween_callback(host.queue_free)

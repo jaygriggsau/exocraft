@@ -262,7 +262,7 @@ func _build_info() -> void:
 	_info_label.position = Vector2(18, 52)
 	add_child_control(_info_label)
 
-	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  P peaceful  •  Esc pause", 13)
+	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  P peaceful  •  Esc pause", 13)
 	_hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	add_child_control(_hint)
 

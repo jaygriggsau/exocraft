@@ -6,6 +6,9 @@ extends Node2D
 const SIZE := 24
 
 var slots: Array = []   # each entry null or {id, count}
+var _sprite: Sprite2D
+var _w := 0.0
+var _h := 0.0
 
 func _init() -> void:
 	slots.resize(SIZE)
@@ -14,14 +17,16 @@ func _init() -> void:
 
 func _ready() -> void:
 	var tex := Art.sprite("storage_pod")
-	var s := Sprite2D.new()
-	s.texture = tex
-	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	s.centered = false
-	s.offset = Vector2(-tex.get_width() / 2.0, -tex.get_height())
-	s.z_index = 1
-	add_child(s)
-	DeployFX.play(self, s)
+	_w = tex.get_width()
+	_h = tex.get_height()
+	_sprite = Sprite2D.new()
+	_sprite.texture = tex
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_sprite.centered = false
+	_sprite.offset = Vector2(-_w / 2.0, -_h)
+	_sprite.z_index = 1
+	add_child(_sprite)
+	DeployFX.play(self, _sprite)
 	var l := PointLight2D.new()
 	l.texture = Art.light_texture()
 	l.color = Color("6fd0e0")
@@ -35,6 +40,18 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if Game.world:
 		Game.world.unregister_pod(self)
+
+func contains_point(p: Vector2) -> bool:
+	var dx := p.x - global_position.x
+	var dy := p.y - global_position.y
+	return absf(dx) <= _w / 2.0 + 2.0 and dy <= 4.0 and dy >= -_h - 4.0
+
+func set_dismantle(frac: float) -> void:
+	_sprite.modulate = Color(1, 1, 1).lerp(Color(1.8, 1.9, 2.2), frac)
+	_sprite.position.x = sin(Time.get_ticks_msec() * 0.05) * 1.5 * frac
+
+func collapse_and_free() -> void:
+	DeployFX.dismantle(self, _sprite)
 
 func count(id: String) -> int:
 	var n := 0

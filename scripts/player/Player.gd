@@ -29,6 +29,7 @@ var _recoil := Vector2.ZERO
 var _mining_now := false
 var _mine_dir := Vector2.RIGHT
 var _mine_target := Vector2i(2147483647, 0)
+var _mine_obj = null            # station/pod currently being dismantled
 var _mine_progress := 0.0
 var _place_cd := 0.0
 var _fire_cd := 0.0
@@ -171,6 +172,7 @@ func _handle_interaction(dt: float) -> void:
 
 func _stop_mining() -> void:
 	_mine_target = Vector2i(2147483647, 0)
+	_mine_obj = null
 	_mine_progress = 0.0
 	_mining_now = false
 	fx.set_state(false, Vector2i.ZERO, Vector2.ZERO, Color.WHITE, Color.WHITE, 0.0)
@@ -183,6 +185,28 @@ func _in_reach(t: Vector2i) -> bool:
 	return global_position.distance_to(c) <= REACH * World.TILE
 
 func _try_mine(dt: float) -> bool:
+	# dismantling a deployed station / storage pod (aim the gun at it)
+	var mpos := get_global_mouse_position()
+	var struct = Game.world.structure_at(mpos)
+	if struct != null and global_position.distance_to(struct.global_position) <= REACH * World.TILE:
+		if struct != _mine_obj:
+			_mine_obj = struct
+			_mine_progress = 0.0
+		_mine_progress += dt
+		var ddur: float = MINE_BASE * 9.0 / _mining_power()
+		var dfrac := clampf(_mine_progress / ddur, 0.0, 1.0)
+		var sp: Vector2 = struct.global_position - Vector2(0, 10)
+		_mine_dir = (sp - global_position).normalized()
+		_mining_now = true
+		var dc := Color("aef6ff")
+		fx.set_state(true, Game.world.world_to_tile(sp), global_position + _mine_dir * 6.0, dc, dc, dfrac, false)
+		struct.set_dismantle(dfrac)
+		if _mine_progress >= ddur:
+			_mine_progress = 0.0
+			_mine_obj = null
+			Game.world.dismantle(struct)
+		return true
+
 	var t := _target_tile()
 	if not _in_reach(t):
 		return false

@@ -344,6 +344,34 @@ func pods_near(pos: Vector2) -> Array:
 			out.append(p)
 	return out
 
+## Find a deployed station/pod whose body contains a world point (for dismantling).
+func structure_at(pos: Vector2):
+	for s in _stations:
+		if is_instance_valid(s) and s.contains_point(pos):
+			return s
+	for p in _pods:
+		if is_instance_valid(p) and p.contains_point(pos):
+			return p
+	return null
+
+## Recover a deployed structure: its item (and a pod's contents) go to the
+## player, then it plays its collapse animation and frees itself.
+func dismantle(struct) -> void:
+	var item_id := "storage_pod"
+	if struct is Station:
+		item_id = struct.station_id
+	if struct is StoragePod:
+		for slot in struct.slots:
+			if slot != null:
+				var left := Game.inventory.add(slot.id, slot.count)
+				if left > 0:
+					var pk := ItemPickup.new()
+					pk.setup(slot.id, left, struct.global_position + Vector2(0, -12))
+					add_child(pk)
+		struct.slots.clear()
+	Game.inventory.add(item_id, 1)
+	struct.collapse_and_free()
+
 func nearest_pod(pos: Vector2) -> StoragePod:
 	var best: StoragePod = null
 	var bd := STORAGE_RANGE

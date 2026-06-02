@@ -84,8 +84,10 @@ godot --path .
     e.g. "needs Fabricator nearby"), **available** (unlocked, missing materials),
     and **craftable** — so the locked→craftable transition is the reward loop.
   - **Deployable stations**: craft a **Workbench**, **Fabricator** or
-    **Synthesizer** and place it in the world; you must stand near the right
-    station to craft its recipes (proximity-gated).
+    **Synthesizer** and place it in the world (it builds up from a seed-pod with
+    an animation); you must stand near the right station to craft its recipes.
+    **Aim the particle gun at a station/pod to dismantle it** and recover the
+    item (a pod returns its contents too).
   - **Storage pods**: deploy containers (press `F` near one to open it,
     click to move stacks in/out). Stations **synthesize using items in nearby
     storage pods** as well as your inventory.
