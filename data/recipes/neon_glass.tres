@@ -21,4 +21,3 @@ output_item = ExtResource("4_7djxw")
 output_quantity = 4
 inputs = Array[ExtResource("1_kupgl")]([SubResource("Resource_e2gl5"), SubResource("Resource_457ty")])
 station = "fabricator"
-unlock_condition = "crafted:fabricator"

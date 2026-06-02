@@ -16,4 +16,3 @@ output_item = ExtResource("3_je2gf")
 output_quantity = 4
 inputs = Array[ExtResource("1_82inm")]([SubResource("Resource_2islm")])
 station = "workbench"
-unlock_condition = "crafted:workbench"

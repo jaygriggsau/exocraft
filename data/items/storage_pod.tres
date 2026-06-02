@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_c3d6e"]
+
+[resource]
+script = ExtResource("1_c3d6e")
+id = "storage_pod"
+display_name = "Storage Pod"
+tier = 1
+category = "structure"
+stack_size = 1
+base_value = 30
+color = Color(0.43529412, 0.8156863, 0.8784314, 1)

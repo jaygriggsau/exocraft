@@ -45,9 +45,11 @@ func _initialize() -> void:
 		["wood_block", "Bio-Timber", 0, "structure", 999, 3, "7c6b4e", T.WOOD, 0.0, {}],
 		["plasma_cutter", "Plasma Cutter", 3, "tool", 1, 60, "ffd23a", -1, 0.0, {"mining_power": 3.0}],
 		["quantum_blade", "Quantum Lance", 3, "weapon", 1, 120, "b06aff", -1, 0.0, {"damage": 30.0, "cooldown": 0.30, "speed": 420.0}],
-		# --- stations ---
+		# --- stations + storage (deployed in the world) ---
+		["storage_pod", "Storage Pod", 1, "structure", 1, 30, "6fd0e0", -1, 0.0, {}],
 		["workbench", "Workbench", 0, "structure", 1, 20, "b89060", -1, 0.0, {}],
 		["fabricator", "Fabricator", 1, "structure", 1, 80, "2dffff", -1, 0.0, {}],
+		["synthesizer", "Synthesizer", 2, "structure", 1, 120, "b06aff", -1, 0.0, {}],
 	]
 
 	var by_id := {}
@@ -71,26 +73,29 @@ func _initialize() -> void:
 		by_id[d[0]] = load("res://data/items/%s.tres" % d[0])
 
 	# out, qty, [[input_id, qty], ...], station, unlock
+	# station = the structure you must stand near; unlock = extra progression gate
 	var recipes := [
 		["workbench", 1, [["scrap", 5], ["stone", 3]], "", ""],
-		["metal_ingot", 1, [["metal_ore", 2]], "workbench", "crafted:workbench"],
-		["glass_pane", 1, [["sand", 2]], "workbench", "crafted:workbench"],
-		["polymer", 1, [["wood", 2]], "workbench", "crafted:workbench"],
-		["wood_block", 4, [["wood", 2]], "workbench", "crafted:workbench"],
+		["metal_ingot", 1, [["metal_ore", 2]], "workbench", ""],
+		["glass_pane", 1, [["sand", 2]], "workbench", ""],
+		["polymer", 1, [["wood", 2]], "workbench", ""],
+		["wood_block", 4, [["wood", 2]], "workbench", ""],
+		["storage_pod", 1, [["metal_ingot", 4], ["glass_pane", 2]], "workbench", ""],
 		["fabricator", 1, [["metal_ingot", 8], ["glass_pane", 2]], "workbench", "tier>=1"],
-		["power_cell", 1, [["energy_core", 1], ["scrap", 1]], "fabricator", "crafted:fabricator"],
-		["crystal_lens", 1, [["crystal", 1]], "fabricator", "crafted:fabricator"],
-		["alloy_plate", 1, [["metal_ingot", 2]], "fabricator", "crafted:fabricator"],
-		["circuit_board", 1, [["metal_ingot", 1], ["crystal_lens", 1]], "fabricator", "crafted:fabricator"],
-		["conduit", 1, [["metal_ingot", 1], ["power_cell", 1]], "fabricator", "crafted:fabricator"],
-		["composite", 1, [["polymer", 1], ["alloy_plate", 1]], "fabricator", "crafted:fabricator"],
-		["plating", 2, [["alloy_plate", 1]], "fabricator", "crafted:fabricator"],
-		["neon_glass", 4, [["glass_pane", 2], ["power_cell", 1]], "fabricator", "crafted:fabricator"],
-		["med_cell", 1, [["biomass", 4], ["crystal", 1]], "fabricator", "crafted:fabricator"],
-		["blaster", 1, [["circuit_board", 1], ["conduit", 1], ["power_cell", 1]], "fabricator", "crafted:fabricator"],
-		["nanocore", 1, [["circuit_board", 1], ["power_cell", 1], ["exotic_matter", 1]], "fabricator", "tier>=3"],
-		["plasma_cutter", 1, [["composite", 1], ["circuit_board", 2], ["exotic_matter", 1]], "fabricator", "tier>=3"],
-		["quantum_blade", 1, [["nanocore", 1], ["composite", 2], ["exotic_matter", 2]], "fabricator", "tier>=3"],
+		["power_cell", 1, [["energy_core", 1], ["scrap", 1]], "fabricator", ""],
+		["crystal_lens", 1, [["crystal", 1]], "fabricator", ""],
+		["alloy_plate", 1, [["metal_ingot", 2]], "fabricator", ""],
+		["circuit_board", 1, [["metal_ingot", 1], ["crystal_lens", 1]], "fabricator", ""],
+		["conduit", 1, [["metal_ingot", 1], ["power_cell", 1]], "fabricator", ""],
+		["composite", 1, [["polymer", 1], ["alloy_plate", 1]], "fabricator", ""],
+		["plating", 2, [["alloy_plate", 1]], "fabricator", ""],
+		["neon_glass", 4, [["glass_pane", 2], ["power_cell", 1]], "fabricator", ""],
+		["med_cell", 1, [["biomass", 4], ["crystal", 1]], "fabricator", ""],
+		["blaster", 1, [["circuit_board", 1], ["conduit", 1], ["power_cell", 1]], "fabricator", ""],
+		["synthesizer", 1, [["alloy_plate", 6], ["circuit_board", 4], ["power_cell", 2]], "fabricator", "tier>=2"],
+		["nanocore", 1, [["circuit_board", 1], ["power_cell", 1], ["exotic_matter", 1]], "synthesizer", "tier>=3"],
+		["plasma_cutter", 1, [["composite", 1], ["circuit_board", 2], ["exotic_matter", 1]], "synthesizer", "tier>=3"],
+		["quantum_blade", 1, [["nanocore", 1], ["composite", 2], ["exotic_matter", 2]], "synthesizer", "tier>=3"],
 	]
 
 	for d in recipes:

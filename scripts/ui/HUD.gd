@@ -27,6 +27,10 @@ var _inv_size := Vector2.ZERO
 var _craft_panel: Control
 var _craft_size := Vector2.ZERO
 var _craft_rows := []
+var _open_pod: StoragePod = null
+var _pod_panel: Control
+var _pod_size := Vector2.ZERO
+var _pod_slots := []
 var _sel_label: Label
 var _tip: Panel
 var _tip_label: Label
@@ -74,6 +78,7 @@ func _ready() -> void:
 	_build_selected_label()
 	_build_inventory()
 	_build_crafting()
+	_build_pod_panel()
 	_build_tooltip()
 	_build_vignette()
 	_build_death_label()
@@ -117,6 +122,7 @@ func _layout() -> void:
 	var startx := (s.x - tw) / 2.0
 	_inv_panel.position = Vector2(startx, (s.y - _inv_size.y) / 2.0)
 	_craft_panel.position = Vector2(startx + _inv_size.x + gap, (s.y - _craft_size.y) / 2.0)
+	_pod_panel.position = Vector2(startx - _pod_size.x - gap, (s.y - _pod_size.y) / 2.0)
 
 func _process(_dt: float) -> void:
 	if Game.player and Game.world:
@@ -128,6 +134,20 @@ func _process(_dt: float) -> void:
 	_peaceful_label.visible = not Game.enemies_enabled
 	_update_vignette()
 	_update_tooltip()
+	if _inv_panel.visible:
+		# recipe states depend on which station you're standing near, so refresh live
+		for row in _craft_rows:
+			_style_recipe(row.button, row.recipe)
+		if _open_pod and (Game.player == null or not is_instance_valid(_open_pod) \
+				or _open_pod.global_position.distance_to(Game.player.global_position) > World.STORAGE_RANGE):
+			_open_pod = null
+			_pod_panel.visible = false
+		if _open_pod:
+			_refresh_pod()
+
+func _refresh_pod() -> void:
+	for i in StoragePod.SIZE:
+		_fill_slot(_pod_slots[i], _open_pod.slots[i], false)
 
 func _update_vignette() -> void:
 	var ratio := Game.health / Game.max_health
@@ -242,7 +262,7 @@ func _build_info() -> void:
 	_info_label.position = Vector2(18, 52)
 	add_child_control(_info_label)
 
-	_hint = _make_label("WAD/Arrows move  •  Shift sprint  •  Space jump  •  L-Click use  •  R-Click mine  •  1-0/Scroll hotbar  •  E inventory  •  P peaceful  •  Esc pause  •  F11 fullscreen", 13)
+	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  P peaceful  •  Esc pause", 13)
 	_hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	add_child_control(_hint)
 
@@ -340,6 +360,32 @@ func _recipe_text(r: Recipe) -> String:
 			parts.append("%dx %s" % [inp.quantity, inp.item.display_name])
 	return out + ", ".join(parts)
 
+func _build_pod_panel() -> void:
+	_pod_panel = Control.new()
+	_pod_panel.visible = false
+	add_child_control(_pod_panel)
+	var cols := 6
+	var rows := int(ceil(float(StoragePod.SIZE) / cols))
+	var gw := cols * (SLOT + PAD) - PAD
+	var gh := rows * (SLOT + PAD) - PAD
+	var top := 46
+	_pod_size = Vector2(gw + 32, gh + top + 16)
+	var bg := Panel.new()
+	bg.add_theme_stylebox_override("panel", _panel_sb())
+	bg.position = Vector2.ZERO
+	bg.size = _pod_size
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pod_panel.add_child(bg)
+	var title := _make_label("STORAGE POD", 20)
+	title.modulate = Color("6fd0e0")
+	title.position = Vector2(16, 12)
+	_pod_panel.add_child(title)
+	for i in StoragePod.SIZE:
+		var cx := i % cols
+		var cy := i / cols
+		var s := _make_slot(_pod_panel, 16 + cx * (SLOT + PAD), top + cy * (SLOT + PAD), SLOT)
+		_pod_slots.append(s)
+
 func _build_tooltip() -> void:
 	_tip = Panel.new()
 	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -420,6 +466,21 @@ func _unhandled_input(e: InputEvent) -> void:
 			Game.inventory.select(9)
 	if get_tree().paused:
 		return
+	if e.is_action_pressed("interact"):
+		_toggle_pod()
+		return
+	# click-to-transfer between cargo and an open storage pod
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and Game.ui_blocking:
+		var mp: Vector2 = _root.get_global_mouse_position()
+		for i in Inventory.SIZE:
+			if _inv_slots[i].panel.get_global_rect().has_point(mp):
+				_transfer_cargo_to_pod(i)
+				return
+		if _open_pod:
+			for j in StoragePod.SIZE:
+				if _pod_slots[j].panel.get_global_rect().has_point(mp):
+					_transfer_pod_to_cargo(j)
+					return
 	if e is InputEventMouseButton and e.pressed:
 		if e.button_index == MOUSE_BUTTON_WHEEL_UP:
 			Game.inventory.select_relative(-1)
@@ -431,10 +492,62 @@ func _unhandled_input(e: InputEvent) -> void:
 		Game.toggle_enemies()
 
 func _toggle_inventory() -> void:
-	var open := not _inv_panel.visible
-	_inv_panel.visible = open
-	_craft_panel.visible = open
-	Game.ui_blocking = open
+	if _inv_panel.visible:
+		_close_ui()
+	else:
+		_open_ui(null)
+
+func _toggle_pod() -> void:
+	if _inv_panel.visible:
+		_close_ui()
+		return
+	var pod: StoragePod = null
+	if Game.world and Game.player:
+		pod = Game.world.nearest_pod(Game.player.global_position)
+	if pod:
+		_open_ui(pod)
+
+func _open_ui(pod: StoragePod) -> void:
+	_open_pod = pod
+	_inv_panel.visible = true
+	_craft_panel.visible = true
+	_pod_panel.visible = pod != null
+	Game.ui_blocking = true
+	_layout()
+	_refresh()
+
+func _close_ui() -> void:
+	_open_pod = null
+	_inv_panel.visible = false
+	_craft_panel.visible = false
+	_pod_panel.visible = false
+	Game.ui_blocking = false
+
+func _transfer_cargo_to_pod(i: int) -> void:
+	if _open_pod == null:
+		return
+	var s = Game.inventory.slots[i]
+	if s == null:
+		return
+	var left := _open_pod.add(s.id, s.count)
+	if left > 0:
+		s.count = left
+	else:
+		Game.inventory.slots[i] = null
+	Game.inventory_changed.emit()
+
+func _transfer_pod_to_cargo(j: int) -> void:
+	if _open_pod == null:
+		return
+	var s = _open_pod.slots[j]
+	if s == null:
+		return
+	var left := Game.inventory.add(s.id, s.count)
+	if left > 0:
+		s.count = left
+	else:
+		_open_pod.slots[j] = null
+	Game.inventory_changed.emit()
 
 func _on_craft(r: Recipe) -> void:
 	ItemDB.try_craft(r)
@@ -449,6 +562,8 @@ func _refresh() -> void:
 		_fill_slot(_inv_slots[i], Game.inventory.slots[i], false)
 	for row in _craft_rows:
 		_style_recipe(row.button, row.recipe)
+	if _open_pod and is_instance_valid(_open_pod):
+		_refresh_pod()
 	var sid := Game.inventory.selected_id()
 	_sel_label.text = ItemDB.name_of(sid) if sid != "" else ""
 

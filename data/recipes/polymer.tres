@@ -15,4 +15,3 @@ script = ExtResource("4_86prx")
 output_item = ExtResource("3_ahxtq")
 inputs = Array[ExtResource("1_txo0b")]([SubResource("Resource_8o1xb")])
 station = "workbench"
-unlock_condition = "crafted:workbench"

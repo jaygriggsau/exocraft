@@ -33,7 +33,12 @@ var _chunk_decor := {}              # Vector2i -> Array[Vector2i] decor cells
 var _chunk_trees := {}              # Vector2i -> Array[AlienTree]
 var _tree_at := {}                  # Vector2i tile -> AlienTree (harvest lookup)
 var _tree_removed := {}             # world tile-x -> true (harvested, don't respawn)
+var _stations := []                 # deployed Station entities
+var _pods := []                     # deployed StoragePod entities
 var _last_center := Vector2i(999999, 999999)
+
+const STATION_RANGE := 88.0         # px: how close you must be to use a station
+const STORAGE_RANGE := 112.0        # px: how close a pod feeds a station
 
 var _height_noise := FastNoiseLite.new()
 var _biome_noise := FastNoiseLite.new()
@@ -310,6 +315,58 @@ func _undecorate_chunk(cc: Vector2i) -> void:
 
 func tree_at(t: Vector2i) -> AlienTree:
 	return _tree_at.get(t)
+
+# ---------------------------------------------------------------------------
+# Deployed stations + storage pods
+# ---------------------------------------------------------------------------
+func register_station(s) -> void:
+	_stations.append(s)
+
+func unregister_station(s) -> void:
+	_stations.erase(s)
+
+func register_pod(p) -> void:
+	_pods.append(p)
+
+func unregister_pod(p) -> void:
+	_pods.erase(p)
+
+func has_station_near(pos: Vector2, id: String) -> bool:
+	for s in _stations:
+		if is_instance_valid(s) and s.station_id == id and s.global_position.distance_to(pos) <= STATION_RANGE:
+			return true
+	return false
+
+func pods_near(pos: Vector2) -> Array:
+	var out := []
+	for p in _pods:
+		if is_instance_valid(p) and p.global_position.distance_to(pos) <= STORAGE_RANGE:
+			out.append(p)
+	return out
+
+func nearest_pod(pos: Vector2) -> StoragePod:
+	var best: StoragePod = null
+	var bd := STORAGE_RANGE
+	for p in _pods:
+		if is_instance_valid(p):
+			var d: float = p.global_position.distance_to(pos)
+			if d <= bd:
+				bd = d
+				best = p
+	return best
+
+## Place a station / storage pod at the bottom of tile `t` (sitting on the ground).
+func spawn_structure(item_id: String, t: Vector2i) -> void:
+	var pos := Vector2((t.x + 0.5) * TILE, (t.y + 1) * TILE)
+	if item_id == "storage_pod":
+		var p := StoragePod.new()
+		p.global_position = pos
+		add_child(p)
+	else:
+		var s := Station.new()
+		s.station_id = item_id
+		s.global_position = pos
+		add_child(s)
 
 func harvest_tree(tree: AlienTree, _t: Vector2i) -> void:
 	_tree_removed[tree.column] = true

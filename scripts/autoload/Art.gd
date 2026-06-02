@@ -203,7 +203,7 @@ func _build_item_icons() -> void:
 		_item_icons[item_id] = ImageTexture.create_from_image(_make_item_icon(item_id))
 
 func _make_item_icon(item_id: String) -> Image:
-	var d: Item = ItemDB.get_item(item_id)
+	var d = ItemDB.get_item(item_id)
 	# Block items just reuse their tile artwork (first variant).
 	if d.place_tile >= 0:
 		return _tile_images[d.place_tile][0]
@@ -251,6 +251,10 @@ func item_icon(item_id: String) -> Texture2D:
 # ---------------------------------------------------------------------------
 func _build_sprites() -> void:
 	_sprites["player"] = ImageTexture.create_from_image(_make_player())
+	_sprites["workbench"] = ImageTexture.create_from_image(_make_workbench())
+	_sprites["fabricator"] = ImageTexture.create_from_image(_make_fabricator())
+	_sprites["synthesizer"] = ImageTexture.create_from_image(_make_synthesizer())
+	_sprites["storage_pod"] = ImageTexture.create_from_image(_make_pod())
 	_sprites["bolt"] = ImageTexture.create_from_image(_make_bolt())
 	_sprites["star"] = ImageTexture.create_from_image(_make_starfield())
 	_sprites["sun"] = ImageTexture.create_from_image(_make_disc(Color("ffe8a8"), Color("ff9a3a")))
@@ -445,6 +449,61 @@ func _build_creature_frames() -> void:
 
 func creature_frames(name: String) -> SpriteFrames:
 	return _creature_frames.get(name)
+
+func _make_workbench() -> Image:
+	var img := _new_image(30, 20)
+	var top := Color("7a5a3a")
+	var leg := Color("5a4028")
+	_rect(img, 2, 6, 26, 4, top)
+	_rect(img, 2, 6, 26, 1, top.lightened(0.15))
+	_rect(img, 4, 10, 3, 10, leg)
+	_rect(img, 23, 10, 3, 10, leg)
+	_rect(img, 18, 2, 5, 4, Color("8a93b8"))   # vice / tool
+	_rect(img, 7, 1, 2, 5, Color("9aa"))        # hammer handle
+	_rect(img, 6, 1, 5, 2, Color("c4c4d6"))     # hammer head
+	return img
+
+func _make_fabricator() -> Image:
+	var img := _new_image(30, 28)
+	var body := Color("3a4a6a")
+	_rect(img, 2, 6, 26, 22, body)
+	_rect(img, 2, 6, 26, 1, Color("2dffff"))    # neon trim
+	_rect(img, 6, 3, 18, 4, Color("2a3a55"))    # vent
+	_rect(img, 5, 10, 20, 9, Color("0a1018"))   # screen
+	for i in 4:
+		_rect(img, 7 + i * 4, 12, 2, 5, Color("2dffff").darkened(randf_range(0.0, 0.4)))
+	_rect(img, 6, 21, 18, 3, Color("23314a"))   # output tray
+	return img
+
+func _make_synthesizer() -> Image:
+	var img := _new_image(30, 32)
+	var dark := Color("241a30")
+	_rect(img, 3, 20, 24, 12, Color("2a2440"))  # base
+	_rect(img, 3, 20, 24, 1, Color("b06aff"))   # trim
+	for tx in [8, 19]:
+		_rect(img, tx, 6, 3, 15, dark)
+		_rect(img, tx, 6 + (Time.get_ticks_msec() % 2), 3, 14, dark)  # tube
+		_rect(img, tx + 1, 7, 1, 12, Color("b06aff"))                  # purple core
+	# core orb
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	_blob(img, 15, 6, 5, Color("b06aff"), rng)
+	img.set_pixel(15, 5, Color("eaccff"))
+	return img
+
+func _make_pod() -> Image:
+	var img := _new_image(24, 22)
+	var body := Color("2a3a45")
+	_rect(img, 3, 4, 18, 18, body)
+	_rect(img, 3, 3, 18, 2, Color("3f5a66"))    # lid
+	_rect(img, 6, 7, 12, 9, Color("6fd0e0"))    # window
+	_rect(img, 7, 8, 10, 7, Color("123040"))    # interior
+	_rect(img, 8, 11, 3, 3, Color("ff9a3a"))    # hint of stored items
+	_rect(img, 13, 10, 3, 4, Color("3aff8f"))
+	# cyan corner bolts
+	for p in [[3, 4], [20, 4], [3, 21], [20, 21]]:
+		img.set_pixel(p[0], p[1], Color("2dffff"))
+	return img
 
 func _make_bolt() -> Image:
 	var img := _new_image(6, 6)

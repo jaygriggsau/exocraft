@@ -15,4 +15,3 @@ output_item = ExtResource("3_d5rxd")
 output_quantity = 2
 inputs = Array[ExtResource("1_l37y3")]([SubResource("Resource_0ws16")])
 station = "fabricator"
-unlock_condition = "crafted:fabricator"

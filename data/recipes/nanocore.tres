@@ -23,5 +23,5 @@ item = ExtResource("4_wlw2f")
 script = ExtResource("6_k7avj")
 output_item = ExtResource("5_vf73e")
 inputs = Array[ExtResource("1_bdeke")]([SubResource("Resource_rjv5p"), SubResource("Resource_hbwef"), SubResource("Resource_iila4")])
-station = "fabricator"
+station = "synthesizer"
 unlock_condition = "tier>=3"

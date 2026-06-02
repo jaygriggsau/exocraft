@@ -6,7 +6,7 @@ extends Node
 ## change required. This autoload just scans the folders, exposes lookups +
 ## crafting rules, and runs a validation pass on load.
 
-enum { TOOL, WEAPON, BLOCK, CONSUMABLE, MATERIAL }   # gameplay use, derived from data
+enum { TOOL, WEAPON, BLOCK, CONSUMABLE, MATERIAL, DEPLOYABLE }   # gameplay use, derived from data
 enum { LOCKED, AVAILABLE, CRAFTABLE }                # recipe UI states
 
 const ITEM_DIR := "res://data/items"
@@ -83,6 +83,8 @@ func type_of(id: String) -> int:
 		return CONSUMABLE
 	if it.category == "tool" or it.stats.has("mining_power"):
 		return TOOL
+	if it.category == "structure":
+		return DEPLOYABLE          # stations + storage pods are placed in the world
 	return MATERIAL
 
 # ---------------------------------------------------------------------------
@@ -96,9 +98,35 @@ func recipe_state(r: Recipe) -> int:
 	return AVAILABLE
 
 func is_unlocked(r: Recipe) -> bool:
-	if r.station != "" and not Game.crafted.has(r.station):
-		return false
+	# must be standing near the required station (built + placed in the world)
+	if r.station != "":
+		if Game.world == null or Game.player == null:
+			return false
+		if not Game.world.has_station_near(Game.player.global_position, r.station):
+			return false
 	return _check_condition(r.unlock_condition)
+
+## How many of an id the player can use to craft: inventory + nearby storage pods.
+func available_count(id: String) -> int:
+	var n := Game.inventory.count(id)
+	if Game.world and Game.player:
+		for pod in Game.world.pods_near(Game.player.global_position):
+			n += pod.count(id)
+	return n
+
+func _consume(id: String, qty: int) -> void:
+	var take: int = mini(qty, Game.inventory.count(id))
+	if take > 0:
+		Game.inventory.remove(id, take)
+		qty -= take
+	if qty > 0 and Game.world and Game.player:
+		for pod in Game.world.pods_near(Game.player.global_position):
+			if qty <= 0:
+				break
+			var t: int = mini(qty, pod.count(id))
+			if t > 0:
+				pod.remove(id, t)
+				qty -= t
 
 func _check_condition(cond: String) -> bool:
 	if cond == "":
@@ -113,7 +141,7 @@ func _has_inputs(r: Recipe) -> bool:
 	for inp in r.inputs:
 		if inp.item == null:
 			continue
-		if Game.inventory.count(inp.item.id) < inp.quantity:
+		if available_count(inp.item.id) < inp.quantity:
 			return false
 	return true
 
@@ -122,15 +150,16 @@ func try_craft(r: Recipe) -> bool:
 		return false
 	for inp in r.inputs:
 		if inp.item:
-			Game.inventory.remove(inp.item.id, inp.quantity)
+			_consume(inp.item.id, inp.quantity)
 	Game.inventory.add(r.output_item.id, r.output_quantity)
 	Game.crafted[r.output_item.id] = true
 	return true
 
 ## Short human reason a recipe is locked, for the UI ("needs Fabricator", etc.)
 func lock_reason(r: Recipe) -> String:
-	if r.station != "" and not Game.crafted.has(r.station):
-		return "needs " + name_of(r.station)
+	if r.station != "" and (Game.world == null or Game.player == null \
+			or not Game.world.has_station_near(Game.player.global_position, r.station)):
+		return "needs " + name_of(r.station) + " nearby"
 	var c := r.unlock_condition
 	if c.begins_with("tier>="):
 		return "reach tier " + c.substr(6)

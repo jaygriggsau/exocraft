@@ -19,4 +19,3 @@ script = ExtResource("5_d4533")
 output_item = ExtResource("4_8fhc3")
 inputs = Array[ExtResource("1_cjs70")]([SubResource("Resource_pf84o"), SubResource("Resource_xoohi")])
 station = "fabricator"
-unlock_condition = "crafted:fabricator"

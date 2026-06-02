@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_wmjou"]
+[ext_resource type="Resource" path="res://data/items/alloy_plate.tres" id="2_napf6"]
+[ext_resource type="Resource" path="res://data/items/circuit_board.tres" id="3_cqpio"]
+[ext_resource type="Resource" path="res://data/items/power_cell.tres" id="4_b1sra"]
+[ext_resource type="Resource" path="res://data/items/synthesizer.tres" id="5_b7vsu"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_jd85w"]
+
+[sub_resource type="Resource" id="Resource_eim2n"]
+script = ExtResource("1_wmjou")
+item = ExtResource("2_napf6")
+quantity = 6
+
+[sub_resource type="Resource" id="Resource_l7vgf"]
+script = ExtResource("1_wmjou")
+item = ExtResource("3_cqpio")
+quantity = 4
+
+[sub_resource type="Resource" id="Resource_y55r5"]
+script = ExtResource("1_wmjou")
+item = ExtResource("4_b1sra")
+quantity = 2
+
+[resource]
+script = ExtResource("6_jd85w")
+output_item = ExtResource("5_b7vsu")
+inputs = Array[ExtResource("1_wmjou")]([SubResource("Resource_eim2n"), SubResource("Resource_l7vgf"), SubResource("Resource_y55r5")])
+station = "fabricator"
+unlock_condition = "tier>=2"

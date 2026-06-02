@@ -43,6 +43,7 @@ func _setup_input() -> void:
 	_add_action("toggle_enemies", [KEY_P])
 	_add_action("pause", [KEY_ESCAPE])
 	_add_action("sprint", [KEY_SHIFT])
+	_add_action("interact", [KEY_F])   # open a nearby storage pod
 
 func _add_action(name: String, keys: Array) -> void:
 	if InputMap.has_action(name):

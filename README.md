@@ -81,8 +81,14 @@ godot --path .
     **stations** (Workbench → Fabricator) and **unlock conditions**
     (`tier>=N`, `crafted:<id>`). Costs/values rise with tier.
   - The fabricator shows three states per recipe — **locked** (with the reason,
-    e.g. "needs Fabricator"), **available** (unlocked, missing materials), and
-    **craftable** — so the locked→craftable transition is the reward loop.
+    e.g. "needs Fabricator nearby"), **available** (unlocked, missing materials),
+    and **craftable** — so the locked→craftable transition is the reward loop.
+  - **Deployable stations**: craft a **Workbench**, **Fabricator** or
+    **Synthesizer** and place it in the world; you must stand near the right
+    station to craft its recipes (proximity-gated).
+  - **Storage pods**: deploy containers (press `F` near one to open it,
+    click to move stacks in/out). Stations **synthesize using items in nearby
+    storage pods** as well as your inventory.
   - 40-slot cargo, 10-slot hotbar, scrollable fabricator. Re-author content with
     `godot --headless --script res://tools/generate_data.gd`.
 - **Alien fauna** (data-driven `Creature` system, two AI modes):

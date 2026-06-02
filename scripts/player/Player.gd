@@ -164,6 +164,7 @@ func _handle_interaction(dt: float) -> void:
 			ItemDB.BLOCK: _try_place(sel)
 			ItemDB.WEAPON: _try_fire(sel)
 			ItemDB.CONSUMABLE: _try_consume(sel)
+			ItemDB.DEPLOYABLE: _try_deploy(sel)
 
 	if not (mining and _try_mine(dt)):
 		_stop_mining()
@@ -274,6 +275,25 @@ func _try_place(item_id: String) -> void:
 	Game.world.set_tile(t, tile)
 	inv.consume_selected(1)
 	_place_cd = PLACE_COOLDOWN
+
+func _try_deploy(item_id: String) -> void:
+	# place a station / storage pod on flat ground within reach
+	if _place_cd > 0.0:
+		return
+	var t := _target_tile()
+	if not _in_reach(t):
+		return
+	if Tiles.is_solid(Game.world.get_tile(t)):
+		return
+	if not Tiles.is_solid(Game.world.get_tile(t + Vector2i(0, 1))):
+		return                              # needs solid ground beneath
+	var tile_rect := Rect2(t.x * World.TILE, (t.y - 1) * World.TILE, World.TILE, World.TILE * 2)
+	var body := Rect2(global_position - Vector2(6, 11), Vector2(12, 22))
+	if tile_rect.intersects(body):
+		return                              # don't drop it on ourselves
+	Game.world.spawn_structure(item_id, t)
+	inv.consume_selected(1)
+	_place_cd = 0.3
 
 func _has_support(t: Vector2i) -> bool:
 	for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
