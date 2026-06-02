@@ -39,9 +39,20 @@ void fragment() {
 }
 """
 
+const SCANLINE_SHADER := """
+shader_type canvas_item;
+void fragment() {
+	float s = step(0.5, fract(UV.y * 360.0));        // thin dark scanlines
+	float d = distance(UV, vec2(0.5));
+	float vig = smoothstep(0.6, 1.05, d) * 0.11;      // soft CRT vignette
+	COLOR = vec4(0.0, 0.03, 0.06, s * 0.04 + vig);
+}
+"""
+
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS   # keep UI alive while the game is paused
+	get_tree().root.theme = _build_theme()    # apply the cyberpunk theme app-wide
 	_make_styleboxes()
 	_build_health()
 	_build_info()
@@ -53,6 +64,7 @@ func _ready() -> void:
 	_build_vignette()
 	_build_death_label()
 	_build_pause()
+	_build_scanlines()
 
 	Game.inventory_changed.connect(_refresh)
 	Game.health_changed.connect(_on_health)
@@ -105,22 +117,77 @@ func _biome_name(b: int) -> String:
 # ---------------------------------------------------------------------------
 func _make_styleboxes() -> void:
 	_normal_sb = StyleBoxFlat.new()
-	_normal_sb.bg_color = Color(0.07, 0.08, 0.13, 0.85)
+	_normal_sb.bg_color = Color(0.05, 0.08, 0.14, 0.88)
 	_normal_sb.set_border_width_all(1)
-	_normal_sb.border_color = Color(0.3, 0.34, 0.5)
-	_normal_sb.set_corner_radius_all(2)
+	_normal_sb.border_color = Color(0.18, 0.45, 0.6)
+	_normal_sb.set_corner_radius_all(0)
 
 	_select_sb = StyleBoxFlat.new()
-	_select_sb.bg_color = Color(0.10, 0.12, 0.2, 0.9)
+	_select_sb.bg_color = Color(0.08, 0.16, 0.22, 0.92)
 	_select_sb.set_border_width_all(2)
 	_select_sb.border_color = Color("2dffff")
-	_select_sb.set_corner_radius_all(2)
+	_select_sb.set_corner_radius_all(0)
+
+# A sharp, neon-framed cyberpunk panel/button box.
+func _sb(bg: Color, border: Color, top: int = 2) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.set_border_width_all(1)
+	s.border_width_top = top
+	s.border_color = border
+	s.set_corner_radius_all(0)
+	s.content_margin_left = 8
+	s.content_margin_right = 8
+	s.content_margin_top = 4
+	s.content_margin_bottom = 4
+	return s
+
+func _build_theme() -> Theme:
+	var th := Theme.new()
+	var fg := Color("c8f0ff")
+	var cyan := Color("2dffff")
+	var mag := Color("ff2bd6")
+	# Buttons (fabricator / pause)
+	th.set_stylebox("normal", "Button", _sb(Color(0.06, 0.10, 0.17, 0.92), cyan))
+	th.set_stylebox("hover", "Button", _sb(Color(0.12, 0.07, 0.17, 0.96), mag))
+	th.set_stylebox("pressed", "Button", _sb(Color(0.0, 0.55, 0.62, 0.95), Color("aef6ff")))
+	th.set_stylebox("disabled", "Button", _sb(Color(0.05, 0.06, 0.10, 0.6), Color(0.25, 0.3, 0.4), 1))
+	th.set_stylebox("focus", "Button", _sb(Color(0, 0, 0, 0), mag))
+	th.set_color("font_color", "Button", fg)
+	th.set_color("font_hover_color", "Button", Color("ffd0f7"))
+	th.set_color("font_pressed_color", "Button", Color("06121a"))
+	th.set_color("font_disabled_color", "Button", Color(0.4, 0.46, 0.56))
+	# Panels + labels
+	th.set_stylebox("panel", "Panel", _panel_sb())
+	th.set_stylebox("panel", "PanelContainer", _panel_sb())
+	th.set_color("font_color", "Label", fg)
+	return th
+
+func _panel_sb() -> StyleBoxFlat:
+	var s := _sb(Color(0.03, 0.05, 0.11, 0.94), Color("2dffff"), 2)
+	s.border_color = Color(0.16, 0.7, 0.85, 0.9)
+	return s
+
+func _build_scanlines() -> void:
+	var sc := ColorRect.new()
+	sc.position = Vector2.ZERO
+	sc.size = Vector2(VW, VH)
+	sc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sc.z_index = 15
+	var sh := Shader.new()
+	sh.code = SCANLINE_SHADER
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	sc.material = m
+	add_child_control(sc)
 
 func _build_health() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.0, 0.0, 0.0, 0.6)
+	var bg := Panel.new()
+	var hsb := _sb(Color(0.02, 0.03, 0.06, 0.7), Color("ff3b6b"), 1)
+	bg.add_theme_stylebox_override("panel", hsb)
 	bg.position = Vector2(16, 16)
 	bg.size = Vector2(224, 22)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child_control(bg)
 	_hp_fill = ColorRect.new()
 	_hp_fill.color = Color("ff3b6b")
@@ -177,12 +244,14 @@ func _build_inventory() -> void:
 	var x0 := (VW - gw) / 2 - 120
 	var y0 := (VH - gh) / 2 - 20
 
-	var bg := ColorRect.new()
-	bg.color = Color(0.03, 0.03, 0.06, 0.92)
+	var bg := Panel.new()
+	bg.add_theme_stylebox_override("panel", _panel_sb())
 	bg.position = Vector2(x0 - 16, y0 - 40)
 	bg.size = Vector2(gw + 32, gh + 56)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_inv_panel.add_child(bg)
 	var title := _make_label("CARGO", 16)
+	title.modulate = Color("2dffff")
 	title.position = Vector2(x0, y0 - 32)
 	_inv_panel.add_child(title)
 
@@ -201,12 +270,14 @@ func _build_crafting() -> void:
 	var py := 110
 	var w := 344
 	var h := 500
-	var bg := ColorRect.new()
-	bg.color = Color(0.03, 0.03, 0.06, 0.92)
+	var bg := Panel.new()
+	bg.add_theme_stylebox_override("panel", _panel_sb())
 	bg.position = Vector2(px - 16, py - 40)
 	bg.size = Vector2(w + 32, h + 56)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_craft_panel.add_child(bg)
 	var title := _make_label("FABRICATOR", 16)
+	title.modulate = Color("2dffff")
 	title.position = Vector2(px, py - 32)
 	_craft_panel.add_child(title)
 

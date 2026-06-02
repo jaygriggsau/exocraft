@@ -30,6 +30,13 @@ window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[gui]
+
+theme/default_font_antialiasing=0
+theme/default_font_hinting=0
+theme/default_font_subpixel_positioning=0
+theme/default_font_generate_mipmaps=false
+
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
