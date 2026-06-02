@@ -21,6 +21,7 @@ func _ready() -> void:
 	s.offset = Vector2(-tex.get_width() / 2.0, -tex.get_height())
 	s.z_index = 1
 	add_child(s)
+	DeployFX.play(self, s)
 	var l := PointLight2D.new()
 	l.texture = Art.light_texture()
 	l.color = Color("6fd0e0")
