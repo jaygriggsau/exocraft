@@ -13,12 +13,18 @@ const REACH := 5.5                 # tiles
 const MINE_BASE := 0.12            # seconds per mine, scaled by tile hardness
 const PLACE_COOLDOWN := 0.12
 const INVULN := 0.6
+const FIRE_KICK := 3.5             # blaster recoil impulse (px)
+const MINE_RECOIL := 1.3           # steady kickback while mining (px)
+const RECOIL_RECOVER := 36.0       # px/s the sprite eases back
 
 var inv: Inventory
 var sprite: AnimatedSprite2D
 var fx: MiningFX
 var facing := 1
 var _anim := ""
+var _recoil := Vector2.ZERO
+var _mining_now := false
+var _mine_dir := Vector2.RIGHT
 var _mine_target := Vector2i(2147483647, 0)
 var _mine_progress := 0.0
 var _place_cd := 0.0
@@ -113,6 +119,13 @@ func _physics_process(dt: float) -> void:
 		_stop_mining()
 	else:
 		_handle_interaction(dt)
+
+	# recoil: a steady kickback while mining, an impulse when firing
+	if _mining_now:
+		_recoil = (-_mine_dir * MINE_RECOIL) + Vector2(randf_range(-0.6, 0.6), randf_range(-0.6, 0.6))
+	else:
+		_recoil = _recoil.move_toward(Vector2.ZERO, RECOIL_RECOVER * dt)
+	sprite.position = _recoil
 	queue_redraw()
 
 func _update_anim() -> void:
@@ -146,6 +159,7 @@ func _handle_interaction(dt: float) -> void:
 func _stop_mining() -> void:
 	_mine_target = Vector2i(2147483647, 0)
 	_mine_progress = 0.0
+	_mining_now = false
 	fx.set_state(false, Vector2i.ZERO, Vector2.ZERO, Color.WHITE, Color.WHITE, 0.0)
 
 func _target_tile() -> Vector2i:
@@ -176,7 +190,9 @@ func _try_mine(dt: float) -> bool:
 	var d = Tiles.def(id)
 	# gun muzzle just in front of the player, pointed at the block
 	var center: Vector2 = Game.world.tile_to_world_center(t)
-	var muzzle := global_position + (center - global_position).normalized() * 6.0
+	_mine_dir = (center - global_position).normalized()
+	_mining_now = true
+	var muzzle := global_position + _mine_dir * 6.0
 	fx.set_state(true, t, muzzle, d.base, _mine_accent(d), frac)
 
 	if _mine_progress >= dur:
@@ -245,6 +261,30 @@ func _try_fire(item_id: String) -> void:
 	p.setup(global_position + dir * 10.0, dir, d.damage, d.speed, true)
 	Game.world.add_child(p)
 	_fire_cd = d.cooldown
+	# kickback + muzzle flash
+	_recoil += -dir * FIRE_KICK
+	_spawn_muzzle_flash(dir * 11.0, d.color, 0.5)
+
+func _spawn_muzzle_flash(local_pos: Vector2, color: Color, size: float) -> void:
+	var flash := Sprite2D.new()
+	flash.texture = Art.light_texture()
+	flash.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	flash.modulate = color
+	flash.scale = Vector2(size, size)
+	flash.position = local_pos
+	flash.z_index = 1
+	add_child(flash)
+	var lt := PointLight2D.new()
+	lt.texture = Art.light_texture()
+	lt.color = color
+	lt.energy = 1.8
+	lt.scale = Vector2(size * 1.3, size * 1.3)
+	flash.add_child(lt)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(flash, "scale", Vector2(size * 0.2, size * 0.2), 0.12)
+	tw.tween_property(flash, "modulate:a", 0.0, 0.12)
+	tw.tween_property(lt, "energy", 0.0, 0.12)
+	tw.finished.connect(flash.queue_free)
 
 func _try_consume(item_id: String) -> void:
 	if _place_cd > 0.0:

@@ -56,7 +56,9 @@ godot --path .
   solid rock.
 - **Particle-gun mining**: a beam from the gun dissolves the target block
   pixel-by-pixel as you mine, and the dissolved bits stream back into the gun as
-  glowing particles, with a light at the impact point.
+  glowing particles, with a light at the impact point. The gun has a flickering
+  muzzle flash and the player kicks back from the recoil (a steady shudder while
+  mining, a sharp kick when firing the blaster, each with its own flash).
 - **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, a fabricator with
   recipes (Hull Plating, Neon Glass, Med-Cells, a replacement Blaster…).
 - **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and
