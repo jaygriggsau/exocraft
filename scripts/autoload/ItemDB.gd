@@ -35,17 +35,44 @@ var ITEMS := {
 	"metal_ore":   {"name": "Ferralite",     "type": MATERIAL, "max_stack": 999, "color": Color("c4c4d6")},
 	"energy_core": {"name": "Ion Core",      "type": MATERIAL, "max_stack": 999, "color": Color("2dffff")},
 	"scrap":       {"name": "Alien Scrap",   "type": MATERIAL, "max_stack": 999, "color": Color("ff8a3a")},
+
+	# --- The 10 foundational building resources (refined crafting components) ---
+	# Tier 1: refined directly from raw drops
+	"metal_ingot":  {"name": "Metal Ingot",   "type": MATERIAL, "max_stack": 999, "color": Color("b8bcd0")},
+	"glass_pane":   {"name": "Glass Pane",     "type": MATERIAL, "max_stack": 999, "color": Color("aee8ff")},
+	"polymer":      {"name": "Bio-Polymer",    "type": MATERIAL, "max_stack": 999, "color": Color("a06cff")},
+	"power_cell":   {"name": "Power Cell",      "type": MATERIAL, "max_stack": 999, "color": Color("2dffff")},
+	"crystal_lens": {"name": "Crystal Lens",    "type": MATERIAL, "max_stack": 999, "color": Color("ff7ae0")},
+	# Tier 2/3: combined from the tier-1 components
+	"alloy_plate":  {"name": "Alloy Plate",     "type": MATERIAL, "max_stack": 999, "color": Color("8a93b8")},
+	"circuit_board":{"name": "Circuit Board",   "type": MATERIAL, "max_stack": 999, "color": Color("3aff8f")},
+	"conduit":      {"name": "Conduit",         "type": MATERIAL, "max_stack": 999, "color": Color("ff9a3a")},
+	"composite":    {"name": "Composite Panel", "type": MATERIAL, "max_stack": 999, "color": Color("5ad0c0")},
+	"nanocore":     {"name": "Nanocore",        "type": MATERIAL, "max_stack": 999, "color": Color("eaffff")},
 }
 
 ## Recipes craftable anywhere (no station system in this slice).
 ## Each recipe: {out:[id,count], cost:[[id,count], ...]}
 var RECIPES := [
-	{"out": ["plating", 2],    "cost": [["metal_ore", 2]]},
-	{"out": ["neon_glass", 4], "cost": [["sand", 2], ["energy_core", 1]]},
-	{"out": ["med_cell", 1],   "cost": [["biomass", 4], ["crystal", 1]]},
-	{"out": ["blaster", 1],    "cost": [["metal_ore", 6], ["crystal", 3], ["energy_core", 2]]},
-	{"out": ["stone", 1],      "cost": [["darkrock", 1]]},
+	# --- foundation: refine raw drops into the 10 building resources ---
+	{"out": ["metal_ingot", 1],  "cost": [["metal_ore", 2]]},
+	{"out": ["glass_pane", 1],    "cost": [["sand", 2]]},
+	{"out": ["polymer", 1],       "cost": [["wood", 2]]},
+	{"out": ["power_cell", 1],    "cost": [["energy_core", 1], ["scrap", 1]]},
+	{"out": ["crystal_lens", 1],  "cost": [["crystal", 1]]},
+	{"out": ["alloy_plate", 1],   "cost": [["metal_ingot", 2]]},
+	{"out": ["circuit_board", 1], "cost": [["metal_ingot", 1], ["crystal_lens", 1]]},
+	{"out": ["conduit", 1],       "cost": [["metal_ingot", 1], ["power_cell", 1]]},
+	{"out": ["composite", 1],     "cost": [["polymer", 1], ["alloy_plate", 1]]},
+	{"out": ["nanocore", 1],      "cost": [["circuit_board", 1], ["power_cell", 1]]},
+
+	# --- buildables / gear, now built from the foundation resources ---
+	{"out": ["plating", 2],    "cost": [["alloy_plate", 1]]},
+	{"out": ["neon_glass", 4], "cost": [["glass_pane", 2], ["power_cell", 1]]},
 	{"out": ["wood_block", 4], "cost": [["wood", 2]]},
+	{"out": ["med_cell", 1],   "cost": [["biomass", 4], ["crystal", 1]]},
+	{"out": ["blaster", 1],    "cost": [["circuit_board", 1], ["alloy_plate", 1], ["power_cell", 1]]},
+	{"out": ["stone", 1],      "cost": [["darkrock", 1]]},
 ]
 
 func get_item(id: String) -> Variant:

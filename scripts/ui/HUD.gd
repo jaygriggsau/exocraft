@@ -197,26 +197,39 @@ func _build_crafting() -> void:
 	_craft_panel.visible = false
 	add_child_control(_craft_panel)
 
-	var px := VW / 2 + 170
-	var py := 150
+	var px := VW / 2 + 150
+	var py := 110
+	var w := 344
+	var h := 500
 	var bg := ColorRect.new()
 	bg.color = Color(0.03, 0.03, 0.06, 0.92)
 	bg.position = Vector2(px - 16, py - 40)
-	bg.size = Vector2(330, ItemDB.RECIPES.size() * 40 + 56)
+	bg.size = Vector2(w + 32, h + 56)
 	_craft_panel.add_child(bg)
 	var title := _make_label("FABRICATOR", 16)
 	title.position = Vector2(px, py - 32)
 	_craft_panel.add_child(title)
 
+	# scrollable list so the recipe set can keep growing
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(px, py)
+	scroll.size = Vector2(w, h)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_craft_panel.add_child(scroll)
+	var vbox := VBoxContainer.new()
+	vbox.custom_minimum_size = Vector2(w - 14, 0)
+	vbox.add_theme_constant_override("separation", 4)
+	scroll.add_child(vbox)
+
 	for i in ItemDB.RECIPES.size():
 		var r: Dictionary = ItemDB.RECIPES[i]
 		var b := Button.new()
-		b.position = Vector2(px, py + i * 40)
-		b.size = Vector2(300, 34)
+		b.custom_minimum_size = Vector2(w - 16, 32)
 		b.text = _recipe_text(r)
-		b.add_theme_font_size_override("font_size", 12)
+		b.add_theme_font_size_override("font_size", 11)
+		b.clip_text = true
 		b.pressed.connect(_on_craft.bind(r))
-		_craft_panel.add_child(b)
+		vbox.add_child(b)
 		_craft_rows.append({"button": b, "recipe": r})
 
 func _recipe_text(r: Dictionary) -> String:

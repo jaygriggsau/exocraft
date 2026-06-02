@@ -67,8 +67,12 @@ godot --path .
   glowing particles, with a light at the impact point. The gun has a flickering
   muzzle flash and the player kicks back from the recoil (a steady shudder while
   mining, a sharp kick when firing the blaster, each with its own flash).
-- **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, a fabricator with
-  recipes (Hull Plating, Neon Glass, Med-Cells, a replacement Blaster…).
+- **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, and a scrollable
+  fabricator. Crafting is built on **10 foundational building resources** —
+  Metal Ingot, Glass Pane, Bio-Polymer, Power Cell and Crystal Lens (refined
+  from raw drops), then Alloy Plate, Circuit Board, Conduit, Composite Panel and
+  Nanocore (combined from those). Buildables and gear (Hull Plating, Neon Glass,
+  the Blaster…) are crafted from these components.
 - **Enemies**: ground **Crawlers** (walk, hop obstacles, contact damage) and
   flying **Drones** (drift through the air toward you), spawned in a ring just
   off-screen up to a cap. They drop scrap / energy cores.
