@@ -83,6 +83,9 @@ godot --path .
   - Spawned in a ring just off-screen up to a cap; you can hunt any of them.
 - **Animated player**: idle breathing bob, a 4-frame run cycle, and jump / fall
   poses, all built from runtime-generated frames driven by an `AnimatedSprite2D`.
+- **Animated fauna**: every creature has runtime-generated frames too — walk
+  cycles for the legged animals, a hop for hoppers, swaying tentacles for
+  floaters, and a scanning eye/thrusters for drones.
 - **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
 - **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
   enemies) for relaxed building.

@@ -34,7 +34,8 @@ var tint := Color.WHITE
 
 # --- runtime ---
 var hp := 0.0
-var _sprite: Sprite2D
+var _sprite: AnimatedSprite2D
+var _anim := ""
 var _state := 0                # 0 wander, 1 chase, 2 flee
 var _wander := 0.0             # ground: direction; flying: heading angle
 var _wander_t := 0.0
@@ -57,10 +58,12 @@ func _ready() -> void:
 	r.size = body_size
 	shape.shape = r
 	add_child(shape)
-	_sprite = Sprite2D.new()
-	_sprite.texture = Art.sprite(sprite_name)
+	_sprite = AnimatedSprite2D.new()
+	_sprite.sprite_frames = Art.creature_frames(sprite_name)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_sprite.modulate = tint
+	_sprite.play("move")
+	_anim = "move"
 	add_child(_sprite)
 	if flying:
 		var l := PointLight2D.new()
@@ -94,6 +97,7 @@ func _physics_process(dt: float) -> void:
 		_move_fly(dt, to_player)
 	else:
 		_move_walk(dt, to_player)
+	_update_anim()
 
 	# attacks (territorial only, while engaged)
 	if _state == 1:
@@ -145,6 +149,13 @@ func _move_fly(dt: float, to_player: Vector2) -> void:
 	if absf(velocity.x) > 1.0:
 		_sprite.flip_h = velocity.x < 0
 	move_and_slide()
+
+func _update_anim() -> void:
+	# fliers always hover; walkers idle when standing still
+	var want := "move" if (flying or absf(velocity.x) > 6.0) else "idle"
+	if want != _anim:
+		_anim = want
+		_sprite.play(want)
 
 func _shoot(dir: Vector2) -> void:
 	var b := Projectile.new()

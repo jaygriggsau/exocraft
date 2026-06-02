@@ -15,6 +15,7 @@ var _item_icons := {}    # item id -> ImageTexture
 var _sprites := {}       # name   -> ImageTexture
 var _light_tex: ImageTexture
 var _player_frames: SpriteFrames
+var _creature_frames := {}       # species name -> SpriteFrames
 var decor_tileset: TileSet
 var decor_source_id := 0
 var _trees := {}         # biome -> ImageTexture
@@ -32,6 +33,7 @@ func _ready() -> void:
 	_build_player_frames()
 	_build_decor_tileset()
 	_build_trees()
+	_build_creature_frames()
 
 # ---------------------------------------------------------------------------
 # Small drawing helpers
@@ -225,13 +227,6 @@ func item_icon(item_id: String) -> Texture2D:
 # ---------------------------------------------------------------------------
 func _build_sprites() -> void:
 	_sprites["player"] = ImageTexture.create_from_image(_make_player())
-	_sprites["crawler"] = ImageTexture.create_from_image(_make_crawler())
-	_sprites["drone"] = ImageTexture.create_from_image(_make_drone())
-	_sprites["grazer"] = ImageTexture.create_from_image(_make_grazer())
-	_sprites["hopper"] = ImageTexture.create_from_image(_make_hopper())
-	_sprites["floater"] = ImageTexture.create_from_image(_make_floater())
-	_sprites["stalker"] = ImageTexture.create_from_image(_make_stalker())
-	_sprites["spitter"] = ImageTexture.create_from_image(_make_spitter())
 	_sprites["bolt"] = ImageTexture.create_from_image(_make_bolt())
 	_sprites["star"] = ImageTexture.create_from_image(_make_starfield())
 	_sprites["sun"] = ImageTexture.create_from_image(_make_disc(Color("ffe8a8"), Color("ff9a3a")))
@@ -270,23 +265,115 @@ func _draw_player(dy: int, lx_l: int, lh_l: int, lx_r: int, lh_r: int, arm_l: in
 	_rect(img, lx_r, leg_top, 2, lh_r, suit_d)
 	return img
 
-func _make_crawler() -> Image:
-	# 18 x 12 multi-legged alien bug.
-	var img := _new_image(18, 12)
+# --- Animated creatures -----------------------------------------------------
+# Each species is drawn as a body (no legs) plus a leg layout; the generic
+# frame builder animates the legs into idle / walk cycles. Fliers and the hopper
+# use bespoke per-frame generators.
+
+func _body_crawler(img: Image) -> void:
 	var body := Color("7a2e8f")
 	var body_l := Color("a23db0")
-	var eye := Color("ff5a5a")
-	var leg := Color("4a1d57")
 	_rect(img, 3, 3, 12, 6, body)
 	_rect(img, 4, 3, 10, 2, body_l)
-	_rect(img, 13, 4, 2, 2, eye)        # eye toward +x (facing right)
-	for lx in [4, 7, 10, 13]:           # legs
-		_rect(img, lx, 9, 1, 3, leg)
-		_rect(img, lx, 0, 1, 3, leg)
+	_rect(img, 13, 4, 2, 2, Color("ff5a5a"))   # eye
+	for lx in [4, 7, 10, 13]:                   # static upper legs
+		_rect(img, lx, 0, 1, 3, Color("4a1d57"))
+
+func _body_grazer(img: Image) -> void:
+	var body := Color("9aa884")
+	var dark := Color("5f6c49")
+	_rect(img, 3, 4, 13, 6, body)
+	_rect(img, 2, 5, 2, 4, body)
+	_rect(img, 15, 3, 5, 5, body)
+	_rect(img, 19, 5, 1, 2, dark)
+	img.set_pixel(17, 5, Color("20242a"))
+	_rect(img, 4, 2, 2, 2, dark)
+	_rect(img, 8, 1, 2, 3, dark)
+
+func _body_stalker(img: Image) -> void:
+	var body := Color("3a2350")
+	var body_l := Color("5a3a78")
+	_rect(img, 2, 5, 16, 4, body)
+	_rect(img, 3, 5, 14, 1, body_l)
+	_rect(img, 16, 3, 6, 5, body)
+	_rect(img, 20, 5, 2, 2, Color("ff4d4d"))
+	for sx in [5, 8, 11, 14]:
+		_rect(img, sx, 3, 1, 2, body_l)
+
+func _body_spitter(img: Image) -> void:
+	var body := Color("4a6a3a")
+	var body_l := Color("6f9a52")
+	_rect(img, 3, 4, 12, 8, body)
+	_rect(img, 4, 4, 10, 2, body_l)
+	_rect(img, 13, 6, 4, 3, body_l)
+	_rect(img, 15, 7, 2, 1, Color("20242a"))
+	_rect(img, 9, 3, 3, 3, body)
+	_rect(img, 10, 4, 2, 2, Color("ffd23a"))
+
+func _legged_image(w: int, h: int, body_cb: Callable, legs: Array, leg_color: Color, leg_w: int, frame: int) -> Image:
+	var img := _new_image(w, h)
+	body_cb.call(img)
+	for i in legs.size():
+		var lg: Array = legs[i]
+		var lift := 0
+		if frame >= 0 and ((frame == 0 and i % 2 == 0) or (frame == 2 and i % 2 == 1)):
+			lift = 1                    # alternate sets of legs lift on the off-beats
+		_rect(img, lg[0], lg[1] - lift, leg_w, lg[2] - lift, leg_color)
 	return img
 
-func _make_drone() -> Image:
-	# 14 x 14 floating sentry orb.
+func _legged_frames(w: int, h: int, body_cb: Callable, legs: Array, leg_color: Color, leg_w: int) -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	sf.add_animation("idle")
+	sf.set_animation_loop("idle", true)
+	sf.set_animation_speed("idle", 2.0)
+	sf.add_frame("idle", _ptex(_legged_image(w, h, body_cb, legs, leg_color, leg_w, -1)))
+	sf.add_animation("move")
+	sf.set_animation_loop("move", true)
+	sf.set_animation_speed("move", 9.0)
+	for f in 4:
+		sf.add_frame("move", _ptex(_legged_image(w, h, body_cb, legs, leg_color, leg_w, f)))
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+	return sf
+
+func _hopper_image(frame: int) -> Image:
+	var img := _new_image(12, 12)
+	var body := Color("b06ad0")
+	var dark := Color("6f3f8f")
+	var dy := 0
+	var llen := 4
+	if frame >= 0:
+		dy = [0, -2, -3, -1][frame]   # hop arc
+		llen = [3, 5, 6, 4][frame]
+	_rect(img, 3, 3 + dy, 6, 5, body)
+	img.set_pixel(4, 5 + dy, Color("20242a"))
+	img.set_pixel(7, 5 + dy, Color("20242a"))
+	_rect(img, 2, 8 + dy, 2, llen, dark)
+	_rect(img, 8, 8 + dy, 2, llen, dark)
+	_rect(img, 4, 9 + dy, 4, 3, body)
+	return img
+
+func _floater_image(frame: int) -> Image:
+	var img := _new_image(16, 18)
+	var bell := Color("6fd0e0")
+	var bell_l := Color("aef0ff")
+	for y in 8:
+		var ww := 14 - absi(4 - y)
+		_rect(img, 8 - ww / 2, y, ww, 1, bell if y % 2 == 0 else bell_l)
+	_rect(img, 5, 8, 6, 1, bell_l)
+	img.set_pixel(6, 4, Color("20242a"))
+	img.set_pixel(9, 4, Color("20242a"))
+	var base := [4, 7, 10]
+	for i in base.size():
+		var dx := 0
+		var tlen := 8
+		if frame >= 0:
+			dx = [0, 1, 0, -1][(frame + i) % 4]
+			tlen = 7 + [0, 1, 0, 1][(frame + i) % 4]   # tentacles sway + wiggle
+		_rect(img, clampi(base[i] + dx, 1, 14), 9, 1, tlen, bell)
+	return img
+
+func _drone_image(frame: int) -> Image:
 	var img := _new_image(14, 14)
 	var sh := Color("2a3350")
 	var sh_l := Color("3f4d78")
@@ -297,87 +384,43 @@ func _make_drone() -> Image:
 			var dy := y - 7
 			if dx * dx + dy * dy <= 36:
 				img.set_pixel(x, y, sh if (x + y) % 2 == 0 else sh_l)
-	_rect(img, 5, 6, 4, 2, eye)
-	img.set_pixel(6, 6, eye.lightened(0.4))
-	_rect(img, 0, 6, 2, 2, sh_l)        # side thrusters
-	_rect(img, 12, 6, 2, 2, sh_l)
+	var ex := 5
+	var tw := 2
+	if frame >= 0:
+		ex = 5 + [0, 1, 2, 1][frame]    # scanning eye
+		tw = 3 if frame % 2 == 1 else 2  # thruster flicker
+	_rect(img, ex, 6, 3, 2, eye)
+	img.set_pixel(ex, 6, eye.lightened(0.4))
+	_rect(img, 0, 6, tw, 2, sh_l)
+	_rect(img, 14 - tw, 6, tw, 2, sh_l)
 	return img
 
-func _make_grazer() -> Image:
-	# 20x14 docile six-legged grazer
-	var img := _new_image(20, 14)
-	var body := Color("9aa884")
-	var dark := Color("5f6c49")
-	_rect(img, 3, 4, 13, 6, body)
-	_rect(img, 2, 5, 2, 4, body)        # rump
-	_rect(img, 15, 3, 5, 5, body)       # head
-	_rect(img, 19, 5, 1, 2, dark)       # snout
-	img.set_pixel(17, 5, Color("20242a"))   # eye
-	_rect(img, 4, 2, 2, 2, dark)        # back fins
-	_rect(img, 8, 1, 2, 3, dark)
-	for lx in [4, 8, 12, 15]:
-		_rect(img, lx, 10, 2, 4, dark)
-	return img
+func _simple_frames(gen: Callable, count: int, fps: float) -> SpriteFrames:
+	var sf := SpriteFrames.new()
+	sf.add_animation("idle")
+	sf.set_animation_loop("idle", true)
+	sf.set_animation_speed("idle", maxf(2.0, fps * 0.5))
+	sf.add_frame("idle", _ptex(gen.call(-1)))
+	sf.add_animation("move")
+	sf.set_animation_loop("move", true)
+	sf.set_animation_speed("move", fps)
+	for f in count:
+		sf.add_frame("move", _ptex(gen.call(f)))
+	if sf.has_animation("default"):
+		sf.remove_animation("default")
+	return sf
 
-func _make_hopper() -> Image:
-	# 12x12 small skittish hopper
-	var img := _new_image(12, 12)
-	var body := Color("b06ad0")
-	var dark := Color("6f3f8f")
-	_rect(img, 3, 3, 6, 5, body)
-	img.set_pixel(4, 5, Color("20242a"))
-	img.set_pixel(7, 5, Color("20242a"))
-	_rect(img, 2, 8, 2, 4, dark)        # big folded legs
-	_rect(img, 8, 8, 2, 4, dark)
-	_rect(img, 4, 9, 4, 3, body)
-	return img
+func _build_creature_frames() -> void:
+	_creature_frames["crawler"] = _legged_frames(18, 12, _body_crawler, [[4, 9, 3], [7, 9, 3], [10, 9, 3], [13, 9, 3]], Color("4a1d57"), 1)
+	_creature_frames["grazer"] = _legged_frames(20, 14, _body_grazer, [[4, 10, 4], [8, 10, 4], [12, 10, 4], [15, 10, 4]], Color("5f6c49"), 2)
+	_creature_frames["stalker"] = _legged_frames(22, 12, _body_stalker, [[4, 9, 3], [8, 9, 3], [12, 9, 3], [15, 9, 3]], Color("3a2350"), 2)
+	_creature_frames["spitter"] = _legged_frames(18, 14, _body_spitter, [[3, 11, 3], [13, 11, 3]], Color("4a6a3a"), 3)
+	_creature_frames["hopper"] = _simple_frames(_hopper_image, 4, 9.0)
+	_creature_frames["floater"] = _simple_frames(_floater_image, 4, 6.0)
+	_creature_frames["drone"] = _simple_frames(_drone_image, 4, 6.0)
 
-func _make_floater() -> Image:
-	# 16x18 drifting jelly-floater
-	var img := _new_image(16, 18)
-	var bell := Color("6fd0e0")
-	var bell_l := Color("aef0ff")
-	for y in 8:
-		var ww := 14 - absi(4 - y)
-		_rect(img, 8 - ww / 2, y, ww, 1, bell if y % 2 == 0 else bell_l)
-	_rect(img, 5, 8, 6, 1, bell_l)
-	for tx in [4, 7, 10]:               # tentacles
-		_rect(img, tx, 9, 1, 8, bell)
-	img.set_pixel(6, 4, Color("20242a"))
-	img.set_pixel(9, 4, Color("20242a"))
-	return img
-
-func _make_stalker() -> Image:
-	# 22x12 sleek territorial predator
-	var img := _new_image(22, 12)
-	var body := Color("3a2350")
-	var body_l := Color("5a3a78")
-	var eye := Color("ff4d4d")
-	_rect(img, 2, 5, 16, 4, body)
-	_rect(img, 3, 5, 14, 1, body_l)
-	_rect(img, 16, 3, 6, 5, body)       # head
-	_rect(img, 20, 5, 2, 2, eye)        # eye
-	for sx in [5, 8, 11, 14]:           # back spikes
-		_rect(img, sx, 3, 1, 2, body_l)
-	for lx in [4, 8, 12, 15]:           # legs
-		_rect(img, lx, 9, 2, 3, body)
-	return img
-
-func _make_spitter() -> Image:
-	# 18x14 squat ranged spitter
-	var img := _new_image(18, 14)
-	var body := Color("4a6a3a")
-	var body_l := Color("6f9a52")
-	var eye := Color("ffd23a")
-	_rect(img, 3, 4, 12, 8, body)
-	_rect(img, 4, 4, 10, 2, body_l)
-	_rect(img, 13, 6, 4, 3, body_l)     # snout/mouth
-	_rect(img, 15, 7, 2, 1, Color("20242a"))   # mouth slit
-	_rect(img, 9, 3, 3, 3, body)        # eye bump
-	_rect(img, 10, 4, 2, 2, eye)
-	for lx in [3, 13]:
-		_rect(img, lx, 11, 3, 3, body)
-	return img
+func creature_frames(name: String) -> SpriteFrames:
+	return _creature_frames.get(name)
 
 func _make_bolt() -> Image:
 	var img := _new_image(6, 6)
