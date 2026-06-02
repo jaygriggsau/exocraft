@@ -6,11 +6,12 @@ extends Node
 ## of these out for hand-drawn PNGs later without touching gameplay code.
 
 const TS := 16  ## tile size in pixels
+const TILE_VARIANTS := 4  ## per-tile texture variants so terrain isn't uniform
 
 var tileset: TileSet
 var atlas_source_id := 0
 
-var _tile_images := {}   # tile id -> Image
+var _tile_images := {}   # tile id -> Array[Image] (one per variant)
 var _item_icons := {}    # item id -> ImageTexture
 var _sprites := {}       # name   -> ImageTexture
 var _light_tex: ImageTexture
@@ -61,13 +62,16 @@ func _rect(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
 # ---------------------------------------------------------------------------
 func _build_tile_images() -> void:
 	for id in Tiles.ids():
-		_tile_images[id] = _make_tile_image(id)
+		var variants: Array = []
+		for v in TILE_VARIANTS:
+			variants.append(_make_tile_image(id, v))
+		_tile_images[id] = variants
 
-func _make_tile_image(id: int) -> Image:
+func _make_tile_image(id: int, variant: int) -> Image:
 	var d = Tiles.def(id)
 	var img := _new_image(TS, TS)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 1000 + id
+	rng.seed = 1000 + id * 101 + variant * 37
 	var style: String = d.style
 	var base: Color = d.base
 
@@ -122,18 +126,34 @@ func _make_tile_image(id: int) -> Image:
 			_rect(img, TS - 1, 0, 1, TS, nc)
 			img.set_pixel(TS / 2, TS / 2, nc.lightened(0.3))
 		_:
-			# "block" / "soil": add a subtle darker bottom-right shade for depth.
+			# "block" / "soil": subtle depth shade, plus per-variant pebbles and
+			# cracks so neighbouring blocks of the same type don't look identical.
 			for y in TS:
 				for x in TS:
 					if x + y > TS + 6:
 						img.set_pixel(x, y, _vary(base.darkened(0.12), rng, 0.04))
+			for f in 2 + rng.randi() % 3:
+				var px := rng.randi_range(2, TS - 3)
+				var py := rng.randi_range(2, TS - 3)
+				var pc := base.lightened(0.18) if rng.randf() < 0.5 else base.darkened(0.24)
+				img.set_pixel(px, py, pc)
+				img.set_pixel(px + 1, py, pc)
+				img.set_pixel(px, py + 1, _vary(pc, rng, 0.05))
+			if rng.randf() < 0.5:
+				var cx := rng.randi_range(3, TS - 4)
+				var cy := rng.randi_range(2, TS - 6)
+				var cl := base.darkened(0.32)
+				for k in 2 + rng.randi() % 3:
+					img.set_pixel(clampi(cx + rng.randi_range(-1, 1), 0, TS - 1), clampi(cy + k, 0, TS - 1), cl)
 	return img
 
 func _build_tileset() -> void:
 	var maxid := Tiles.max_id()
-	var atlas := _new_image((maxid + 1) * TS, TS)
+	# atlas: one column per tile id, one row per variant
+	var atlas := _new_image((maxid + 1) * TS, TILE_VARIANTS * TS)
 	for id in Tiles.ids():
-		atlas.blit_rect(_tile_images[id], Rect2i(0, 0, TS, TS), Vector2i(id * TS, 0))
+		for v in TILE_VARIANTS:
+			atlas.blit_rect(_tile_images[id][v], Rect2i(0, 0, TS, TS), Vector2i(id * TS, v * TS))
 	var tex := ImageTexture.create_from_image(atlas)
 
 	var ts := TileSet.new()
@@ -158,17 +178,18 @@ func _build_tileset() -> void:
 	occ.polygon = square
 
 	for id in Tiles.ids():
-		var coord := Vector2i(id, 0)
-		src.create_tile(coord)
-		var td := src.get_tile_data(coord, 0)
-		td.add_collision_polygon(0)
-		td.set_collision_polygon_points(0, 0, square)
-		td.set_occluder(0, occ)
+		for v in TILE_VARIANTS:
+			var coord := Vector2i(id, v)
+			src.create_tile(coord)
+			var td := src.get_tile_data(coord, 0)
+			td.add_collision_polygon(0)
+			td.set_collision_polygon_points(0, 0, square)
+			td.set_occluder(0, occ)
 
 	tileset = ts
 
-func tile_atlas_coords(id: int) -> Vector2i:
-	return Vector2i(id, 0)
+func tile_atlas_coords(id: int, variant: int = 0) -> Vector2i:
+	return Vector2i(id, variant)
 
 # ---------------------------------------------------------------------------
 # Item icons
@@ -179,9 +200,9 @@ func _build_item_icons() -> void:
 
 func _make_item_icon(item_id: String) -> Image:
 	var d = ItemDB.get_item(item_id)
-	# Block items just reuse their tile artwork.
+	# Block items just reuse their tile artwork (first variant).
 	if d.type == ItemDB.BLOCK:
-		return _tile_images[d.tile]
+		return _tile_images[d.tile][0]
 
 	var img := _new_image(TS, TS)
 	var c: Color = d.color

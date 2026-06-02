@@ -269,7 +269,14 @@ func _render_chunk(cc: Vector2i) -> void:
 		for lx in CHUNK:
 			var id := data[ly * CHUNK + lx]
 			if id != Tiles.AIR:
-				tilemap.set_cell(Vector2i(ox + lx, oy + ly), Art.atlas_source_id, Art.tile_atlas_coords(id))
+				var tx := ox + lx
+				var ty := oy + ly
+				tilemap.set_cell(Vector2i(tx, ty), Art.atlas_source_id, Art.tile_atlas_coords(id, _tile_variant(tx, ty)))
+
+func _tile_variant(tx: int, ty: int) -> int:
+	var h: int = tx * 374761393 + ty * 668265263
+	h = (h ^ (h >> 13)) * 1274126177
+	return absi(h) % Art.TILE_VARIANTS
 
 func _erase_chunk(cc: Vector2i) -> void:
 	var ox := cc.x * CHUNK
@@ -313,7 +320,7 @@ func set_tile(t: Vector2i, id: int) -> int:
 		if id == Tiles.AIR:
 			tilemap.erase_cell(t)
 		else:
-			tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id))
+			tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id, _tile_variant(t.x, t.y)))
 	# refresh block lights for this chunk if it is in the lit zone
 	if _chunk_lights.has(cc):
 		_free_chunk_lights(cc)
