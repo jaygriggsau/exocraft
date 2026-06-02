@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_7niip"]
+
+[resource]
+script = ExtResource("1_7niip")
+id = "glass_pane"
+display_name = "Glass Pane"
+tier = 1
+category = "refined"
+base_value = 4
+color = Color(0.68235296, 0.9098039, 1, 1)

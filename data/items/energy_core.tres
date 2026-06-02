@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_nr50k"]
+
+[resource]
+script = ExtResource("1_nr50k")
+id = "energy_core"
+display_name = "Ion Core"
+tier = 2
+base_value = 12
+color = Color(0.1764706, 1, 1, 1)

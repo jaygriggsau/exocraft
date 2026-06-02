@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_fg5ew"]
+[ext_resource type="Resource" path="res://data/items/nanocore.tres" id="2_66xwl"]
+[ext_resource type="Resource" path="res://data/items/composite.tres" id="3_ui4df"]
+[ext_resource type="Resource" path="res://data/items/exotic_matter.tres" id="4_f1wky"]
+[ext_resource type="Resource" path="res://data/items/quantum_blade.tres" id="5_uwlh2"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_22x0y"]
+
+[sub_resource type="Resource" id="Resource_iera2"]
+script = ExtResource("1_fg5ew")
+item = ExtResource("2_66xwl")
+
+[sub_resource type="Resource" id="Resource_dynrl"]
+script = ExtResource("1_fg5ew")
+item = ExtResource("3_ui4df")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_trq0x"]
+script = ExtResource("1_fg5ew")
+item = ExtResource("4_f1wky")
+quantity = 2
+
+[resource]
+script = ExtResource("6_22x0y")
+output_item = ExtResource("5_uwlh2")
+inputs = Array[ExtResource("1_fg5ew")]([SubResource("Resource_iera2"), SubResource("Resource_dynrl"), SubResource("Resource_trq0x")])
+station = "fabricator"
+unlock_condition = "tier>=3"

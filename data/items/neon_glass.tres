@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_kxlb1"]
+
+[resource]
+script = ExtResource("1_kxlb1")
+id = "neon_glass"
+display_name = "Neon Glass"
+tier = 2
+category = "structure"
+base_value = 10
+color = Color(1, 0.16862746, 0.8392157, 1)
+place_tile = 11

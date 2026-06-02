@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_cjs70"]
+[ext_resource type="Resource" path="res://data/items/energy_core.tres" id="2_sw5we"]
+[ext_resource type="Resource" path="res://data/items/scrap.tres" id="3_cwftp"]
+[ext_resource type="Resource" path="res://data/items/power_cell.tres" id="4_8fhc3"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_d4533"]
+
+[sub_resource type="Resource" id="Resource_pf84o"]
+script = ExtResource("1_cjs70")
+item = ExtResource("2_sw5we")
+
+[sub_resource type="Resource" id="Resource_xoohi"]
+script = ExtResource("1_cjs70")
+item = ExtResource("3_cwftp")
+
+[resource]
+script = ExtResource("5_d4533")
+output_item = ExtResource("4_8fhc3")
+inputs = Array[ExtResource("1_cjs70")]([SubResource("Resource_pf84o"), SubResource("Resource_xoohi")])
+station = "fabricator"
+unlock_condition = "crafted:fabricator"

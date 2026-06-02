@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_2h6hj"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="2_whmh7"]
+[ext_resource type="Resource" path="res://data/items/glass_pane.tres" id="3_uih86"]
+[ext_resource type="Resource" path="res://data/items/fabricator.tres" id="4_6ldgl"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_yxf4r"]
+
+[sub_resource type="Resource" id="Resource_3gigh"]
+script = ExtResource("1_2h6hj")
+item = ExtResource("2_whmh7")
+quantity = 8
+
+[sub_resource type="Resource" id="Resource_cp3uc"]
+script = ExtResource("1_2h6hj")
+item = ExtResource("3_uih86")
+quantity = 2
+
+[resource]
+script = ExtResource("5_yxf4r")
+output_item = ExtResource("4_6ldgl")
+inputs = Array[ExtResource("1_2h6hj")]([SubResource("Resource_3gigh"), SubResource("Resource_cp3uc")])
+station = "workbench"
+unlock_condition = "tier>=1"

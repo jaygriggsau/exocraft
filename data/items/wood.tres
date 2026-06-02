@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_pkq13"]
+
+[resource]
+script = ExtResource("1_pkq13")
+id = "wood"
+display_name = "Xylo-Timber"
+base_value = 2
+color = Color(0.6039216, 0.47843137, 0.32156864, 1)

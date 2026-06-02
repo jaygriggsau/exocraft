@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_k0bdv"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="2_7eemp"]
+[ext_resource type="Resource" path="res://data/items/crystal_lens.tres" id="3_r7vrg"]
+[ext_resource type="Resource" path="res://data/items/circuit_board.tres" id="4_6g2pv"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_r3uul"]
+
+[sub_resource type="Resource" id="Resource_sorpw"]
+script = ExtResource("1_k0bdv")
+item = ExtResource("2_7eemp")
+
+[sub_resource type="Resource" id="Resource_w44mu"]
+script = ExtResource("1_k0bdv")
+item = ExtResource("3_r7vrg")
+
+[resource]
+script = ExtResource("5_r3uul")
+output_item = ExtResource("4_6g2pv")
+inputs = Array[ExtResource("1_k0bdv")]([SubResource("Resource_sorpw"), SubResource("Resource_w44mu")])
+station = "fabricator"
+unlock_condition = "crafted:fabricator"

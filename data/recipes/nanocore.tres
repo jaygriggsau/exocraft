@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_bdeke"]
+[ext_resource type="Resource" path="res://data/items/circuit_board.tres" id="2_wd52c"]
+[ext_resource type="Resource" path="res://data/items/power_cell.tres" id="3_74410"]
+[ext_resource type="Resource" path="res://data/items/exotic_matter.tres" id="4_wlw2f"]
+[ext_resource type="Resource" path="res://data/items/nanocore.tres" id="5_vf73e"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_k7avj"]
+
+[sub_resource type="Resource" id="Resource_rjv5p"]
+script = ExtResource("1_bdeke")
+item = ExtResource("2_wd52c")
+
+[sub_resource type="Resource" id="Resource_hbwef"]
+script = ExtResource("1_bdeke")
+item = ExtResource("3_74410")
+
+[sub_resource type="Resource" id="Resource_iila4"]
+script = ExtResource("1_bdeke")
+item = ExtResource("4_wlw2f")
+
+[resource]
+script = ExtResource("6_k7avj")
+output_item = ExtResource("5_vf73e")
+inputs = Array[ExtResource("1_bdeke")]([SubResource("Resource_rjv5p"), SubResource("Resource_hbwef"), SubResource("Resource_iila4")])
+station = "fabricator"
+unlock_condition = "tier>=3"

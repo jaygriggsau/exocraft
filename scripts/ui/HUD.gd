@@ -323,21 +323,21 @@ func _build_crafting() -> void:
 	vbox.add_theme_constant_override("separation", 5)
 	scroll.add_child(vbox)
 	for i in ItemDB.RECIPES.size():
-		var r: Dictionary = ItemDB.RECIPES[i]
+		var r: Recipe = ItemDB.RECIPES[i]
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(w - 16, 38)
-		b.text = _recipe_text(r)
 		b.add_theme_font_size_override("font_size", 13)
 		b.clip_text = true
 		b.pressed.connect(_on_craft.bind(r))
 		vbox.add_child(b)
 		_craft_rows.append({"button": b, "recipe": r})
 
-func _recipe_text(r: Dictionary) -> String:
-	var out := "%s x%d  <=  " % [ItemDB.name_of(r.out[0]), r.out[1]]
+func _recipe_text(r: Recipe) -> String:
+	var out := "%s x%d  <=  " % [r.output_item.display_name, r.output_quantity]
 	var parts := []
-	for c in r.cost:
-		parts.append("%dx %s" % [c[1], ItemDB.name_of(c[0])])
+	for inp in r.inputs:
+		if inp.item:
+			parts.append("%dx %s" % [inp.quantity, inp.item.display_name])
 	return out + ", ".join(parts)
 
 func _build_tooltip() -> void:
@@ -436,8 +436,8 @@ func _toggle_inventory() -> void:
 	_craft_panel.visible = open
 	Game.ui_blocking = open
 
-func _on_craft(r: Dictionary) -> void:
-	Game.inventory.craft(r)
+func _on_craft(r: Recipe) -> void:
+	ItemDB.try_craft(r)
 
 # ---------------------------------------------------------------------------
 func _refresh() -> void:
@@ -448,9 +448,25 @@ func _refresh() -> void:
 	for i in Inventory.SIZE:
 		_fill_slot(_inv_slots[i], Game.inventory.slots[i], false)
 	for row in _craft_rows:
-		row.button.disabled = not Game.inventory.can_craft(row.recipe)
+		_style_recipe(row.button, row.recipe)
 	var sid := Game.inventory.selected_id()
 	_sel_label.text = ItemDB.name_of(sid) if sid != "" else ""
+
+func _style_recipe(b: Button, r: Recipe) -> void:
+	# three visible states create the locked -> craftable reward arc
+	match ItemDB.recipe_state(r):
+		ItemDB.CRAFTABLE:
+			b.disabled = false
+			b.modulate = Color(1, 1, 1, 1)
+			b.text = _recipe_text(r)
+		ItemDB.AVAILABLE:
+			b.disabled = true
+			b.modulate = Color(1, 1, 1, 0.85)
+			b.text = _recipe_text(r)
+		_:  # LOCKED
+			b.disabled = true
+			b.modulate = Color(0.55, 0.6, 0.72, 0.6)
+			b.text = "[" + ItemDB.lock_reason(r) + "]  " + _recipe_text(r)
 
 func _fill_slot(s: Dictionary, stack, selected: bool) -> void:
 	s.panel.add_theme_stylebox_override("panel", _select_sb if selected else _normal_sb)

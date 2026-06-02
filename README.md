@@ -69,12 +69,22 @@ godot --path .
   glowing particles, with a light at the impact point. The gun has a flickering
   muzzle flash and the player kicks back from the recoil (a steady shudder while
   mining, a sharp kick when firing the blaster, each with its own flash).
-- **Inventory + crafting**: 40-slot cargo, 10-slot hotbar, and a scrollable
-  fabricator. Crafting is built on **10 foundational building resources** —
-  Metal Ingot, Glass Pane, Bio-Polymer, Power Cell and Crystal Lens (refined
-  from raw drops), then Alloy Plate, Circuit Board, Conduit, Composite Panel and
-  Nanocore (combined from those). Buildables and gear (Hull Plating, Neon Glass,
-  the Blaster…) are crafted from these components.
+- **Data-driven crafting & economy**: the *engine* is in code, all *content* is
+  in editable `.tres` assets under `res://data/` — add or rebalance items and
+  recipes in the inspector with **no code changes**.
+  - `Item` / `Recipe` / `RecipeInput` are `Resource` classes (`scripts/items/`).
+  - `ItemDB` scans `res://data/items` + `res://data/recipes` at startup, exposes
+    lookups + crafting rules, and runs a **validation pass** (flags orphan items
+    that are never an input/end-item, and balance smells where a recipe needs an
+    input of a *higher* tier than its output).
+  - A tiered tree (tier 0→3): raw drops → refined → components → gear, gated by
+    **stations** (Workbench → Fabricator) and **unlock conditions**
+    (`tier>=N`, `crafted:<id>`). Costs/values rise with tier.
+  - The fabricator shows three states per recipe — **locked** (with the reason,
+    e.g. "needs Fabricator"), **available** (unlocked, missing materials), and
+    **craftable** — so the locked→craftable transition is the reward loop.
+  - 40-slot cargo, 10-slot hotbar, scrollable fabricator. Re-author content with
+    `godot --headless --script res://tools/generate_data.gd`.
 - **Alien fauna** (data-driven `Creature` system, two AI modes):
   - **Passive** animals wander and flee when hurt — biome-tinted **Grazers**,
     skittish **Hoppers**, and drifting **Floaters** (drop biomass / energy).

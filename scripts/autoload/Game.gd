@@ -27,6 +27,9 @@ var time_of_day := 0.30    ## 0..1, 0 = midnight, 0.5 = noon (driven by DayNight
 var day_count := 1
 var enemies_enabled := true ## peaceful mode toggle
 
+var crafted := {}          ## ids of recipes/stations ever crafted (gates unlocks)
+var max_tier_seen := 0     ## highest item tier obtained (gates "tier>=N")
+
 func _ready() -> void:
 	randomize()
 	world_seed = randi()

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_txo0b"]
+[ext_resource type="Resource" path="res://data/items/wood.tres" id="2_7fpl3"]
+[ext_resource type="Resource" path="res://data/items/polymer.tres" id="3_ahxtq"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="4_86prx"]
+
+[sub_resource type="Resource" id="Resource_8o1xb"]
+script = ExtResource("1_txo0b")
+item = ExtResource("2_7fpl3")
+quantity = 2
+
+[resource]
+script = ExtResource("4_86prx")
+output_item = ExtResource("3_ahxtq")
+inputs = Array[ExtResource("1_txo0b")]([SubResource("Resource_8o1xb")])
+station = "workbench"
+unlock_condition = "crafted:workbench"

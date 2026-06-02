@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_1gppc"]
+
+[resource]
+script = ExtResource("1_1gppc")
+id = "fabricator"
+display_name = "Fabricator"
+tier = 1
+category = "structure"
+stack_size = 1
+base_value = 80
+color = Color(0.1764706, 1, 1, 1)

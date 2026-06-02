@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_kupgl"]
+[ext_resource type="Resource" path="res://data/items/glass_pane.tres" id="2_ccv5p"]
+[ext_resource type="Resource" path="res://data/items/power_cell.tres" id="3_w7hto"]
+[ext_resource type="Resource" path="res://data/items/neon_glass.tres" id="4_7djxw"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_x5tmv"]
+
+[sub_resource type="Resource" id="Resource_e2gl5"]
+script = ExtResource("1_kupgl")
+item = ExtResource("2_ccv5p")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_457ty"]
+script = ExtResource("1_kupgl")
+item = ExtResource("3_w7hto")
+
+[resource]
+script = ExtResource("5_x5tmv")
+output_item = ExtResource("4_7djxw")
+output_quantity = 4
+inputs = Array[ExtResource("1_kupgl")]([SubResource("Resource_e2gl5"), SubResource("Resource_457ty")])
+station = "fabricator"
+unlock_condition = "crafted:fabricator"

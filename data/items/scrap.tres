@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_257np"]
+
+[resource]
+script = ExtResource("1_257np")
+id = "scrap"
+display_name = "Alien Scrap"
+base_value = 2
+color = Color(1, 0.5411765, 0.22745098, 1)

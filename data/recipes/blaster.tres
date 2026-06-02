@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_7basi"]
+[ext_resource type="Resource" path="res://data/items/circuit_board.tres" id="2_fo5bn"]
+[ext_resource type="Resource" path="res://data/items/conduit.tres" id="3_m08tc"]
+[ext_resource type="Resource" path="res://data/items/power_cell.tres" id="4_eh23u"]
+[ext_resource type="Resource" path="res://data/items/blaster.tres" id="5_roe8x"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_4mbjk"]
+
+[sub_resource type="Resource" id="Resource_owa0n"]
+script = ExtResource("1_7basi")
+item = ExtResource("2_fo5bn")
+
+[sub_resource type="Resource" id="Resource_563v0"]
+script = ExtResource("1_7basi")
+item = ExtResource("3_m08tc")
+
+[sub_resource type="Resource" id="Resource_721xf"]
+script = ExtResource("1_7basi")
+item = ExtResource("4_eh23u")
+
+[resource]
+script = ExtResource("6_4mbjk")
+output_item = ExtResource("5_roe8x")
+inputs = Array[ExtResource("1_7basi")]([SubResource("Resource_owa0n"), SubResource("Resource_563v0"), SubResource("Resource_721xf")])
+station = "fabricator"
+unlock_condition = "crafted:fabricator"

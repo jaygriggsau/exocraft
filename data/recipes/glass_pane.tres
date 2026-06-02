@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_3g4hu"]
+[ext_resource type="Resource" path="res://data/items/sand.tres" id="2_5w2xw"]
+[ext_resource type="Resource" path="res://data/items/glass_pane.tres" id="3_ti7r5"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="4_ox1vc"]
+
+[sub_resource type="Resource" id="Resource_xkfle"]
+script = ExtResource("1_3g4hu")
+item = ExtResource("2_5w2xw")
+quantity = 2
+
+[resource]
+script = ExtResource("4_ox1vc")
+output_item = ExtResource("3_ti7r5")
+inputs = Array[ExtResource("1_3g4hu")]([SubResource("Resource_xkfle")])
+station = "workbench"
+unlock_condition = "crafted:workbench"

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_p6702"]
+
+[resource]
+script = ExtResource("1_p6702")
+id = "ice"
+display_name = "Cryo-Ice"
+tier = 1
+base_value = 2
+color = Color(0.56078434, 0.8392157, 0.9372549, 1)
+place_tile = 4

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_rcetg"]
+
+[resource]
+script = ExtResource("1_rcetg")
+id = "sand"
+display_name = "Glass-Sand"
+color = Color(0.8509804, 0.7607843, 0.47843137, 1)
+place_tile = 6

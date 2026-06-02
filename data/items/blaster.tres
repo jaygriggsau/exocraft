@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_wc3c3"]
+
+[resource]
+script = ExtResource("1_wc3c3")
+id = "blaster"
+display_name = "Ion Blaster"
+tier = 2
+category = "weapon"
+stack_size = 1
+base_value = 24
+stats = {
+"cooldown": 0.22,
+"damage": 12.0,
+"speed": 360.0
+}
+color = Color(1, 0.16862746, 0.8392157, 1)

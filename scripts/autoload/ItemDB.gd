@@ -1,102 +1,158 @@
 extends Node
-## Item + recipe registry.
+## Data-driven item/recipe registry.
 ##
-## Items are referenced everywhere by their string id. Each item has a `type`
-## that decides what happens when it is the selected hotbar item and the player
-## "uses" it (left click):
-##   TOOL       -> mine the tile under the cursor
-##   WEAPON     -> fire a projectile toward the cursor
-##   BLOCK      -> place its `tile` at the cursor
-##   CONSUMABLE -> apply its effect (e.g. heal) and consume one
-##   MATERIAL   -> crafting ingredient only, no use action
+## The ENGINE lives here; all CONTENT lives in editable .tres assets under
+## res://data/. Add or rebalance items/recipes by editing those assets — no code
+## change required. This autoload just scans the folders, exposes lookups +
+## crafting rules, and runs a validation pass on load.
 
-enum { TOOL, WEAPON, BLOCK, CONSUMABLE, MATERIAL }
+enum { TOOL, WEAPON, BLOCK, CONSUMABLE, MATERIAL }   # gameplay use, derived from data
+enum { LOCKED, AVAILABLE, CRAFTABLE }                # recipe UI states
 
-## id -> definition. Fields vary by type; common ones:
-##   name, type, max_stack, color (icon tint / accent)
-##   tile (BLOCK), damage/cooldown/speed (WEAPON), heal (CONSUMABLE)
-var ITEMS := {
-	"pickaxe":     {"name": "Particle Gun",  "type": TOOL,       "max_stack": 1,   "color": Color("2dffff")},
-	"blaster":     {"name": "Ion Blaster",   "type": WEAPON,     "max_stack": 1,   "color": Color("ff2bd6"), "damage": 12.0, "cooldown": 0.22, "speed": 360.0},
-	"med_cell":    {"name": "Med-Cell",      "type": CONSUMABLE, "max_stack": 20,  "color": Color("39ff88"), "heal": 40.0},
+const ITEM_DIR := "res://data/items"
+const RECIPE_DIR := "res://data/recipes"
 
-	"dirt":        {"name": "Regolith",      "type": BLOCK, "max_stack": 999, "tile": Tiles.DIRT,     "color": Color("564470")},
-	"stone":       {"name": "Slate",         "type": BLOCK, "max_stack": 999, "tile": Tiles.STONE,    "color": Color("43465e")},
-	"ice":         {"name": "Cryo-Ice",      "type": BLOCK, "max_stack": 999, "tile": Tiles.ICE,      "color": Color("8fd6ef")},
-	"biomass":     {"name": "Biomass",       "type": BLOCK, "max_stack": 999, "tile": Tiles.JUNGLE,   "color": Color("a6ff3a")},
-	"sand":        {"name": "Glass-Sand",    "type": BLOCK, "max_stack": 999, "tile": Tiles.SAND,     "color": Color("d9c27a")},
-	"darkrock":    {"name": "Obsidite",      "type": BLOCK, "max_stack": 999, "tile": Tiles.DARKROCK, "color": Color("2e2138")},
-	"wood_block":  {"name": "Bio-Timber",    "type": BLOCK, "max_stack": 999, "tile": Tiles.WOOD,     "color": Color("7c6b4e")},
-	"plating":     {"name": "Hull Plating",  "type": BLOCK, "max_stack": 999, "tile": Tiles.PLATING,  "color": Color("7a80b0")},
-	"neon_glass":  {"name": "Neon Glass",    "type": BLOCK, "max_stack": 999, "tile": Tiles.NEON,     "color": Color("ff2bd6")},
+var ITEMS := {}        # id -> Item
+var RECIPES: Array = []  # Array[Recipe]
 
-	"wood":        {"name": "Xylo-Timber",   "type": MATERIAL, "max_stack": 999, "color": Color("9a7a52")},
-	"crystal":     {"name": "Vyrite Crystal","type": MATERIAL, "max_stack": 999, "color": Color("ff4df0")},
-	"metal_ore":   {"name": "Ferralite",     "type": MATERIAL, "max_stack": 999, "color": Color("c4c4d6")},
-	"energy_core": {"name": "Ion Core",      "type": MATERIAL, "max_stack": 999, "color": Color("2dffff")},
-	"scrap":       {"name": "Alien Scrap",   "type": MATERIAL, "max_stack": 999, "color": Color("ff8a3a")},
+func _ready() -> void:
+	_load_items()
+	_load_recipes()
+	_validate()
 
-	# --- The 10 foundational building resources (refined crafting components) ---
-	# Tier 1: refined directly from raw drops
-	"metal_ingot":  {"name": "Metal Ingot",   "type": MATERIAL, "max_stack": 999, "color": Color("b8bcd0")},
-	"glass_pane":   {"name": "Glass Pane",     "type": MATERIAL, "max_stack": 999, "color": Color("aee8ff")},
-	"polymer":      {"name": "Bio-Polymer",    "type": MATERIAL, "max_stack": 999, "color": Color("a06cff")},
-	"power_cell":   {"name": "Power Cell",      "type": MATERIAL, "max_stack": 999, "color": Color("2dffff")},
-	"crystal_lens": {"name": "Crystal Lens",    "type": MATERIAL, "max_stack": 999, "color": Color("ff7ae0")},
-	# Tier 2/3: combined from the tier-1 components
-	"alloy_plate":  {"name": "Alloy Plate",     "type": MATERIAL, "max_stack": 999, "color": Color("8a93b8")},
-	"circuit_board":{"name": "Circuit Board",   "type": MATERIAL, "max_stack": 999, "color": Color("3aff8f")},
-	"conduit":      {"name": "Conduit",         "type": MATERIAL, "max_stack": 999, "color": Color("ff9a3a")},
-	"composite":    {"name": "Composite Panel", "type": MATERIAL, "max_stack": 999, "color": Color("5ad0c0")},
-	"nanocore":     {"name": "Nanocore",        "type": MATERIAL, "max_stack": 999, "color": Color("eaffff")},
-}
+func _load_items() -> void:
+	var d := DirAccess.open(ITEM_DIR)
+	if d == null:
+		push_warning("ItemDB: missing %s" % ITEM_DIR)
+		return
+	for f in d.get_files():
+		if f.ends_with(".tres"):
+			var it: Item = load(ITEM_DIR + "/" + f)
+			if it and it.id != "":
+				ITEMS[it.id] = it
 
-## Recipes craftable anywhere (no station system in this slice).
-## Each recipe: {out:[id,count], cost:[[id,count], ...]}
-var RECIPES := [
-	# --- foundation: refine raw drops into the 10 building resources ---
-	{"out": ["metal_ingot", 1],  "cost": [["metal_ore", 2]]},
-	{"out": ["glass_pane", 1],    "cost": [["sand", 2]]},
-	{"out": ["polymer", 1],       "cost": [["wood", 2]]},
-	{"out": ["power_cell", 1],    "cost": [["energy_core", 1], ["scrap", 1]]},
-	{"out": ["crystal_lens", 1],  "cost": [["crystal", 1]]},
-	{"out": ["alloy_plate", 1],   "cost": [["metal_ingot", 2]]},
-	{"out": ["circuit_board", 1], "cost": [["metal_ingot", 1], ["crystal_lens", 1]]},
-	{"out": ["conduit", 1],       "cost": [["metal_ingot", 1], ["power_cell", 1]]},
-	{"out": ["composite", 1],     "cost": [["polymer", 1], ["alloy_plate", 1]]},
-	{"out": ["nanocore", 1],      "cost": [["circuit_board", 1], ["power_cell", 1]]},
+func _load_recipes() -> void:
+	var d := DirAccess.open(RECIPE_DIR)
+	if d == null:
+		push_warning("ItemDB: missing %s" % RECIPE_DIR)
+		return
+	for f in d.get_files():
+		if f.ends_with(".tres"):
+			var r: Recipe = load(RECIPE_DIR + "/" + f)
+			if r and r.output_item:
+				RECIPES.append(r)
 
-	# --- buildables / gear, now built from the foundation resources ---
-	{"out": ["plating", 2],    "cost": [["alloy_plate", 1]]},
-	{"out": ["neon_glass", 4], "cost": [["glass_pane", 2], ["power_cell", 1]]},
-	{"out": ["wood_block", 4], "cost": [["wood", 2]]},
-	{"out": ["med_cell", 1],   "cost": [["biomass", 4], ["crystal", 1]]},
-	{"out": ["blaster", 1],    "cost": [["circuit_board", 1], ["alloy_plate", 1], ["power_cell", 1]]},
-	{"out": ["stone", 1],      "cost": [["darkrock", 1]]},
-]
+# ---------------------------------------------------------------------------
+# Item lookups
+# ---------------------------------------------------------------------------
+func get_item(id: String) -> Item:
+	return ITEMS.get(id)
 
-func get_item(id: String) -> Variant:
-	return ITEMS.get(id, null)
+func has_item(id: String) -> bool:
+	return ITEMS.has(id)
 
 func name_of(id: String) -> String:
-	var d = ITEMS.get(id)
-	return d.name if d != null else id
-
-func type_of(id: String) -> int:
-	var d = ITEMS.get(id)
-	return d.type if d != null else MATERIAL
+	var it: Item = ITEMS.get(id)
+	return it.display_name if it else id
 
 func max_stack(id: String) -> int:
-	var d = ITEMS.get(id)
-	return d.max_stack if d != null else 999
-
-func place_tile(id: String) -> int:
-	## Tile id this item places, or Tiles.AIR if it is not placeable.
-	var d = ITEMS.get(id)
-	if d != null and d.type == BLOCK:
-		return d.tile
-	return Tiles.AIR
+	var it: Item = ITEMS.get(id)
+	return it.stack_size if it else 999
 
 func color_of(id: String) -> Color:
-	var d = ITEMS.get(id)
-	return d.color if d != null else Color.WHITE
+	var it: Item = ITEMS.get(id)
+	return it.color if it else Color.WHITE
+
+func tier_of(id: String) -> int:
+	var it: Item = ITEMS.get(id)
+	return it.tier if it else 0
+
+func place_tile(id: String) -> int:
+	var it: Item = ITEMS.get(id)
+	return it.place_tile if (it and it.place_tile >= 0) else Tiles.AIR
+
+func type_of(id: String) -> int:
+	var it: Item = ITEMS.get(id)
+	if it == null:
+		return MATERIAL
+	if it.place_tile >= 0:
+		return BLOCK
+	if it.stats.has("damage"):
+		return WEAPON
+	if it.heal > 0.0:
+		return CONSUMABLE
+	if it.category == "tool" or it.stats.has("mining_power"):
+		return TOOL
+	return MATERIAL
+
+# ---------------------------------------------------------------------------
+# Crafting rules
+# ---------------------------------------------------------------------------
+func recipe_state(r: Recipe) -> int:
+	if not is_unlocked(r):
+		return LOCKED
+	if Game.inventory and _has_inputs(r):
+		return CRAFTABLE
+	return AVAILABLE
+
+func is_unlocked(r: Recipe) -> bool:
+	if r.station != "" and not Game.crafted.has(r.station):
+		return false
+	return _check_condition(r.unlock_condition)
+
+func _check_condition(cond: String) -> bool:
+	if cond == "":
+		return true
+	if cond.begins_with("tier>="):
+		return Game.max_tier_seen >= int(cond.substr(6))
+	if cond.begins_with("crafted:"):
+		return Game.crafted.has(cond.substr(8))
+	return true
+
+func _has_inputs(r: Recipe) -> bool:
+	for inp in r.inputs:
+		if inp.item == null:
+			continue
+		if Game.inventory.count(inp.item.id) < inp.quantity:
+			return false
+	return true
+
+func try_craft(r: Recipe) -> bool:
+	if recipe_state(r) != CRAFTABLE:
+		return false
+	for inp in r.inputs:
+		if inp.item:
+			Game.inventory.remove(inp.item.id, inp.quantity)
+	Game.inventory.add(r.output_item.id, r.output_quantity)
+	Game.crafted[r.output_item.id] = true
+	return true
+
+## Short human reason a recipe is locked, for the UI ("needs Fabricator", etc.)
+func lock_reason(r: Recipe) -> String:
+	if r.station != "" and not Game.crafted.has(r.station):
+		return "needs " + name_of(r.station)
+	var c := r.unlock_condition
+	if c.begins_with("tier>="):
+		return "reach tier " + c.substr(6)
+	if c.begins_with("crafted:"):
+		return "needs " + name_of(c.substr(8))
+	return "locked"
+
+# ---------------------------------------------------------------------------
+# Validation: orphan items + balance smells (run once on load)
+# ---------------------------------------------------------------------------
+func _validate() -> void:
+	var used := {}
+	for r in RECIPES:
+		for inp in r.inputs:
+			if inp.item:
+				used[inp.item.id] = true
+				if r.output_item and inp.item.tier > r.output_item.tier:
+					push_warning("[balance] '%s' needs '%s' (t%d) > output t%d" % [
+						r.output_item.id, inp.item.id, inp.item.tier, r.output_item.tier])
+	for id in ITEMS:
+		var it: Item = ITEMS[id]
+		var end_use := type_of(id) != MATERIAL or it.category == "structure"
+		if not used.has(id) and not end_use:
+			push_warning("[orphan] '%s' is never a recipe input and not an end item" % id)
+	print("ItemDB: loaded %d items, %d recipes" % [ITEMS.size(), RECIPES.size()])

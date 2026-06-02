@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_b2exr"]
+
+[resource]
+script = ExtResource("1_b2exr")
+id = "dirt"
+display_name = "Regolith"
+color = Color(0.3372549, 0.26666668, 0.4392157, 1)
+place_tile = 1

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_0smob"]
+
+[resource]
+script = ExtResource("1_0smob")
+id = "pickaxe"
+display_name = "Particle Gun"
+category = "tool"
+stack_size = 1
+base_value = 0
+stats = {
+"mining_power": 1.0
+}
+color = Color(0.1764706, 1, 1, 1)

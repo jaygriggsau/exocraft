@@ -455,6 +455,8 @@ func _gen_tile(tx: int, ty: int, surf: int, biome: int) -> int:
 
 	var stone := Tiles.DARKROCK if ty > DEEP_Y else Tiles.STONE
 	# ores, deepest/rarest first
+	if ty > 150 and _energy_noise.get_noise_2d(float(tx) + 7000.0, float(ty)) > 0.82:
+		return Tiles.EXOTIC                  # tier-3, only very deep
 	if ty > 60 and _energy_noise.get_noise_2d(float(tx), float(ty)) > 0.8:
 		return Tiles.ENERGY
 	if ty > 20 and _crystal_noise.get_noise_2d(float(tx), float(ty)) > 0.78:

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_7sx2k"]
+
+[resource]
+script = ExtResource("1_7sx2k")
+id = "wood_block"
+display_name = "Bio-Timber"
+category = "structure"
+base_value = 3
+color = Color(0.4862745, 0.41960785, 0.30588236, 1)
+place_tile = 13

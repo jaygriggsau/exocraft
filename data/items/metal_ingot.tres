@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_dy8dk"]
+
+[resource]
+script = ExtResource("1_dy8dk")
+id = "metal_ingot"
+display_name = "Metal Ingot"
+tier = 1
+category = "refined"
+base_value = 10
+color = Color(0.72156864, 0.7372549, 0.8156863, 1)

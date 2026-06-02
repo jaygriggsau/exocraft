@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_ftnwy"]
+
+[resource]
+script = ExtResource("1_ftnwy")
+id = "crystal_lens"
+display_name = "Crystal Lens"
+tier = 2
+category = "component"
+base_value = 14
+color = Color(1, 0.47843137, 0.8784314, 1)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_01bwn"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="2_5oq2f"]
+[ext_resource type="Resource" path="res://data/items/alloy_plate.tres" id="3_hrdkx"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="4_7ykdi"]
+
+[sub_resource type="Resource" id="Resource_840qo"]
+script = ExtResource("1_01bwn")
+item = ExtResource("2_5oq2f")
+quantity = 2
+
+[resource]
+script = ExtResource("4_7ykdi")
+output_item = ExtResource("3_hrdkx")
+inputs = Array[ExtResource("1_01bwn")]([SubResource("Resource_840qo")])
+station = "fabricator"
+unlock_condition = "crafted:fabricator"

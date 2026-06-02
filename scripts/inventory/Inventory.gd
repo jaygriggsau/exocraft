@@ -35,6 +35,7 @@ func select_relative(delta: int) -> void:
 ## did not fit (0 on full success).
 func add(id: String, count: int) -> int:
 	var ms := ItemDB.max_stack(id)
+	Game.max_tier_seen = maxi(Game.max_tier_seen, ItemDB.tier_of(id))  # progression gate
 	# top up existing stacks first
 	for i in SIZE:
 		if count <= 0:
@@ -90,17 +91,3 @@ func consume_selected(n: int = 1) -> void:
 	if s.count <= 0:
 		slots[selected] = null
 	_changed()
-
-func can_craft(recipe: Dictionary) -> bool:
-	for c in recipe.cost:
-		if count(c[0]) < c[1]:
-			return false
-	return true
-
-func craft(recipe: Dictionary) -> bool:
-	if not can_craft(recipe):
-		return false
-	for c in recipe.cost:
-		remove(c[0], c[1])
-	add(recipe.out[0], recipe.out[1])
-	return true

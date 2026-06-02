@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_nrqy1"]
+
+[resource]
+script = ExtResource("1_nrqy1")
+id = "stone"
+display_name = "Slate"
+color = Color(0.2627451, 0.27450982, 0.36862746, 1)
+place_tile = 2

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_6xg2l"]
+
+[resource]
+script = ExtResource("1_6xg2l")
+id = "med_cell"
+display_name = "Med-Cell"
+tier = 2
+category = "component"
+stack_size = 20
+base_value = 8
+color = Color(0.22352941, 1, 0.53333336, 1)
+heal = 40.0

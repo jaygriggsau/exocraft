@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_xgwyl"]
+[ext_resource type="Resource" path="res://data/items/composite.tres" id="2_figf7"]
+[ext_resource type="Resource" path="res://data/items/circuit_board.tres" id="3_oyp7y"]
+[ext_resource type="Resource" path="res://data/items/exotic_matter.tres" id="4_nfdq1"]
+[ext_resource type="Resource" path="res://data/items/plasma_cutter.tres" id="5_4ikwg"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_6awri"]
+
+[sub_resource type="Resource" id="Resource_kfjcu"]
+script = ExtResource("1_xgwyl")
+item = ExtResource("2_figf7")
+
+[sub_resource type="Resource" id="Resource_382lt"]
+script = ExtResource("1_xgwyl")
+item = ExtResource("3_oyp7y")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_frlka"]
+script = ExtResource("1_xgwyl")
+item = ExtResource("4_nfdq1")
+
+[resource]
+script = ExtResource("6_6awri")
+output_item = ExtResource("5_4ikwg")
+inputs = Array[ExtResource("1_xgwyl")]([SubResource("Resource_kfjcu"), SubResource("Resource_382lt"), SubResource("Resource_frlka")])
+station = "fabricator"
+unlock_condition = "tier>=3"

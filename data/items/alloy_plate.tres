@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_01lc5"]
+
+[resource]
+script = ExtResource("1_01lc5")
+id = "alloy_plate"
+display_name = "Alloy Plate"
+tier = 2
+category = "refined"
+base_value = 22
+color = Color(0.5411765, 0.5764706, 0.72156864, 1)

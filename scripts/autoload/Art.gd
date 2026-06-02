@@ -203,10 +203,10 @@ func _build_item_icons() -> void:
 		_item_icons[item_id] = ImageTexture.create_from_image(_make_item_icon(item_id))
 
 func _make_item_icon(item_id: String) -> Image:
-	var d = ItemDB.get_item(item_id)
+	var d: Item = ItemDB.get_item(item_id)
 	# Block items just reuse their tile artwork (first variant).
-	if d.type == ItemDB.BLOCK:
-		return _tile_images[d.tile][0]
+	if d.place_tile >= 0:
+		return _tile_images[d.place_tile][0]
 
 	var img := _new_image(TS, TS)
 	var c: Color = d.color

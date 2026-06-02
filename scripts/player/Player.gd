@@ -88,11 +88,13 @@ func _ready() -> void:
 	Game.player_died.connect(_on_died)
 
 func _starting_kit() -> void:
+	# starter kit: a tool, a few meds, and raws to bootstrap the crafting tree
 	inv.add("pickaxe", 1)
-	inv.add("blaster", 1)
-	inv.add("plating", 30)
-	inv.add("neon_glass", 10)
 	inv.add("med_cell", 3)
+	inv.add("scrap", 10)
+	inv.add("stone", 8)
+	inv.add("metal_ore", 4)
+	inv.add("wood", 6)
 	inv.select(0)
 
 # ---------------------------------------------------------------------------
@@ -191,7 +193,7 @@ func _try_mine(dt: float) -> bool:
 			_mine_target = t
 			_mine_progress = 0.0
 		_mine_progress += dt
-		var hdur: float = MINE_BASE * tree.harvest_time
+		var hdur: float = MINE_BASE * tree.harvest_time / _mining_power()
 		var hfrac := clampf(_mine_progress / hdur, 0.0, 1.0)
 		var hcenter: Vector2 = Game.world.tile_to_world_center(t)
 		_mine_dir = (hcenter - global_position).normalized()
@@ -216,7 +218,7 @@ func _try_mine(dt: float) -> bool:
 		_mine_progress = 0.0
 	_mine_progress += dt
 
-	var dur: float = MINE_BASE * Tiles.hardness(id)
+	var dur: float = MINE_BASE * Tiles.hardness(id) / _mining_power()
 	var frac := clampf(_mine_progress / dur, 0.0, 1.0)
 	var d = Tiles.def(id)
 	# gun muzzle just in front of the player, pointed at the block
@@ -290,18 +292,27 @@ func _is_exposed(t: Vector2i) -> bool:
 func _try_fire(item_id: String) -> void:
 	if _fire_cd > 0.0:
 		return
-	var d = ItemDB.get_item(item_id)
+	var it := ItemDB.get_item(item_id)
+	var dmg: float = it.stats.get("damage", 10.0)
+	var spd: float = it.stats.get("speed", 320.0)
+	var cd: float = it.stats.get("cooldown", 0.25)
 	var dir := (get_global_mouse_position() - global_position)
 	if dir.length() < 1.0:
 		dir = Vector2(facing, 0)
 	dir = dir.normalized()
 	var p := Projectile.new()
-	p.setup(global_position + dir * 10.0, dir, d.damage, d.speed, true)
+	p.setup(global_position + dir * 10.0, dir, dmg, spd, true)
 	Game.world.add_child(p)
-	_fire_cd = d.cooldown
+	_fire_cd = cd
 	# kickback + muzzle flash
 	_recoil += -dir * FIRE_KICK
-	_spawn_muzzle_flash(dir * 11.0, d.color, 0.5)
+	_spawn_muzzle_flash(dir * 11.0, it.color, 0.5)
+
+func _mining_power() -> float:
+	var it := ItemDB.get_item(inv.selected_id())
+	if it and it.stats.has("mining_power"):
+		return float(it.stats.mining_power)
+	return 1.0
 
 func _spawn_muzzle_flash(local_pos: Vector2, color: Color, size: float) -> void:
 	var flash := Sprite2D.new()
@@ -327,10 +338,10 @@ func _spawn_muzzle_flash(local_pos: Vector2, color: Color, size: float) -> void:
 func _try_consume(item_id: String) -> void:
 	if _place_cd > 0.0:
 		return
-	var d = ItemDB.get_item(item_id)
-	if Game.health >= Game.max_health:
+	var it := ItemDB.get_item(item_id)
+	if Game.health >= Game.max_health or it.heal <= 0.0:
 		return
-	Game.heal_player(d.heal)
+	Game.heal_player(it.heal)
 	inv.consume_selected(1)
 	_place_cd = 0.4
 

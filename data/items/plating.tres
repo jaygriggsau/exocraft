@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_0wwle"]
+
+[resource]
+script = ExtResource("1_0wwle")
+id = "plating"
+display_name = "Hull Plating"
+tier = 2
+category = "structure"
+base_value = 12
+color = Color(0.47843137, 0.5019608, 0.6901961, 1)
+place_tile = 10
