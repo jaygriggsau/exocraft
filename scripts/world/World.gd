@@ -216,6 +216,7 @@ func _spawn_tree(tx: int, surf_y: int, biome: int, trees: Array) -> void:
 	tr.occupied = occ
 	tr.drops = _tree_drops(biome)
 	tr.harvest_time = 6.0
+	tr.seed_v = tx ^ (Game.world_seed * 31)
 	tr.setup(biome, Vector2(tx * TILE + TILE / 2.0, surf_y * TILE), tx)
 	add_child(tr)
 	tr.z_index = 1

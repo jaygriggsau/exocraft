@@ -18,7 +18,7 @@ var _player_frames: SpriteFrames
 var _creature_frames := {}       # species name -> SpriteFrames
 var decor_tileset: TileSet
 var decor_source_id := 0
-var _trees := {}         # biome -> ImageTexture
+var _tree_cache := {}    # "biome_seed" -> ImageTexture (each tree is unique)
 
 # decor tile ids (atlas columns in the decor tileset)
 enum { TUFT_WASTES, TUFT_TUNDRA, TUFT_DUNES, TUFT_JUNGLE, ROCK, FLOWER, MUSHROOM }
@@ -32,7 +32,6 @@ func _ready() -> void:
 	_build_light_texture()
 	_build_player_frames()
 	_build_decor_tileset()
-	_build_trees()
 	_build_creature_frames()
 
 # ---------------------------------------------------------------------------
@@ -608,58 +607,121 @@ func _blob(img: Image, cx: int, cy: int, r: int, color: Color, rng: RandomNumber
 			if d <= r - rng.randf_range(0.0, 1.3):
 				img.set_pixel(x, y, _vary(color, rng, 0.06))
 
-func _make_tree(biome: int) -> Image:
-	# 30 wide x 84 tall; trunk base centred at x=15, bottom row y=83
-	var w := 30
-	var h := 84
+func _pset(img: Image, x: int, y: int, c: Color) -> void:
+	if x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height():
+		img.set_pixel(x, y, c)
+
+## Grows a wandering, tapering, bark-textured trunk from (bx, by) up to row ty.
+## Returns the top-centre tile where the canopy should sit.
+func _trunk(img: Image, bx: int, by: int, ty: int, base_w: float, top_w: float, col: Color, dark: Color, rng: RandomNumberGenerator) -> Vector2i:
+	var x := float(bx)
+	var vx := rng.randf_range(-0.3, 0.3)
+	var rows := by - ty
+	var margin := int(ceil(base_w)) + 1
+	for i in range(rows + 1):
+		var y := by - i
+		var t := float(i) / float(maxi(rows, 1))
+		vx += rng.randf_range(-0.16, 0.16)
+		vx = clampf(vx * 0.92, -0.95, 0.95)         # damped random walk = gentle curve
+		x = clampf(x + vx, float(margin), float(img.get_width() - margin))
+		var w := lerpf(base_w, top_w, t) + rng.randf_range(-0.5, 0.5)
+		var half := maxf(1.0, w / 2.0)
+		var x0 := int(round(x - half))
+		var x1 := int(round(x + half))
+		for px in range(x0, x1 + 1):
+			var c := col
+			if px == x0 or px == x1:
+				c = dark                              # shaded bark edges
+			elif rng.randf() < 0.16:
+				c = dark.lerp(col, 0.5)               # vertical streaks
+			_pset(img, px, y, c)
+		if rng.randf() < 0.05:                        # knots
+			_pset(img, int(round(x)) + (1 if rng.randf() < 0.5 else -1), y, dark.darkened(0.25))
+	return Vector2i(int(round(x)), ty)
+
+func _branch(img: Image, x: int, y: int, dir: float, length: int, col: Color, dark: Color, rng: RandomNumberGenerator) -> void:
+	var fx := float(x)
+	var fy := float(y)
+	var w := 2.4
+	for i in length:
+		fx += dir
+		fy -= rng.randf_range(0.35, 1.0)
+		var half := maxf(0.5, w / 2.0)
+		for px in range(int(fx - half), int(fx + half) + 1):
+			_pset(img, px, int(fy), col if rng.randf() < 0.8 else dark)
+		w = maxf(1.0, w - 0.18)
+
+func _canopy_blobs(img: Image, cx: int, cy: int, color: Color, dots: Color, rng: RandomNumberGenerator) -> void:
+	var main_r := rng.randi_range(9, 14)
+	_blob(img, cx, cy, main_r, color, rng)
+	for i in rng.randi_range(2, 4):
+		var ox := rng.randi_range(-main_r, main_r)
+		var oy := rng.randi_range(-5, main_r / 2)
+		_blob(img, cx + ox, cy + oy, rng.randi_range(5, maxi(6, main_r - 3)), color, rng)
+	for i in rng.randi_range(5, 11):
+		_pset(img, cx + rng.randi_range(-main_r, main_r), cy + rng.randi_range(-main_r, main_r / 2), dots)
+
+func _canopy_ice(img: Image, cx: int, cy: int, color: Color, rng: RandomNumberGenerator) -> void:
+	var layers := rng.randi_range(4, 7)
+	var y := float(cy)
+	for i in layers:
+		var ww := (layers - i) * 2 + rng.randi_range(1, 3)
+		_rect(img, cx - ww, int(y), ww * 2, 2, _vary(color, rng, 0.05))
+		y -= rng.randf_range(3.0, 5.0)
+	_rect(img, cx - 1, int(y) - 4, 2, 7, color.lightened(0.2))
+
+func _make_tree(biome: int, rng: RandomNumberGenerator) -> Image:
+	# 38 wide x 96 tall image, trunk base centred at the bottom
+	var w := 38
+	var h := 96
 	var img := _new_image(w, h)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 700 + biome
-	var cx := w / 2
+	var bx := w / 2
+	var by := h - 1
+	var height := rng.randi_range(52, 74)
+	var top_y := by - height
 	match biome:
 		World.TUNDRA:
 			var trunk := Color("9fb8d0")
-			_rect(img, cx - 2, 40, 4, h - 40, trunk)
-			var ice := Color("8fe8ff")
-			for i in 5:
-				var yy := 14 + i * 6
-				var ww := 12 - i * 2
-				_rect(img, cx - ww, yy, ww * 2, 3, _vary(ice, rng, 0.05))
-			_rect(img, cx - 1, 6, 2, 12, ice.lightened(0.2))
+			var dark := Color("6f86a0")
+			var top := _trunk(img, bx, by, top_y + 6, rng.randf_range(4.0, 6.0), 2.0, trunk, dark, rng)
+			_canopy_ice(img, top.x, top.y, Color("8fe8ff"), rng)
 		World.DUNES:
-			var body := Color("a7c08a")
-			_rect(img, cx - 3, 24, 6, h - 24, body)         # column
-			_rect(img, cx - 8, 44, 5, 3, body)              # arms
-			_rect(img, cx - 8, 36, 3, 11, body)
-			_rect(img, cx + 3, 50, 5, 3, body)
-			_rect(img, cx + 5, 40, 3, 13, body)
-			_rect(img, cx - 1, 18, 2, 8, body.lightened(0.15))
+			var body := Color("8aa86a")
+			var dark := Color("5f7a45")
+			var top := _trunk(img, bx, by, top_y + 4, rng.randf_range(5.0, 7.0), 3.0, body, dark, rng)
+			for i in rng.randi_range(1, 3):           # succulent arms
+				var ay := rng.randi_range(top.y + 10, by - 16)
+				var d := 1.0 if rng.randf() < 0.5 else -1.0
+				_branch(img, bx, ay, d, rng.randi_range(8, 14), body, dark, rng)
+			for i in rng.randi_range(3, 6):           # bristly tip
+				_rect(img, top.x - 3 + i, top.y - rng.randi_range(2, 6), 1, rng.randi_range(3, 6), Color("c8e0a0"))
 		World.JUNGLE:
 			var trunk := Color("3b5a2a")
-			_rect(img, cx - 3, 38, 6, h - 38, trunk)
-			var canopy := Color("7aff3a")
-			_blob(img, cx, 26, 14, canopy, rng)
-			_blob(img, cx - 9, 34, 8, canopy, rng)
-			_blob(img, cx + 9, 33, 8, canopy, rng)
-			for i in 8:
-				img.set_pixel(rng.randi_range(cx - 12, cx + 12), rng.randi_range(16, 40), Color("eaffba"))
+			var dark := Color("26401a")
+			var top := _trunk(img, bx, by, top_y, rng.randf_range(5.0, 7.5), 3.0, trunk, dark, rng)
+			for i in rng.randi_range(0, 2):
+				var ay := rng.randi_range(top.y + 14, by - 20)
+				_branch(img, bx, ay, (1.0 if rng.randf() < 0.5 else -1.0), rng.randi_range(6, 11), trunk, dark, rng)
+			_canopy_blobs(img, top.x, top.y, Color("7aff3a"), Color("eaffba"), rng)
 		_:  # WASTES neon
 			var trunk := Color("2a6e5a")
-			_rect(img, cx - 2, 40, 4, h - 40, trunk)
-			var canopy := Color("ff4df0")
-			_blob(img, cx, 24, 13, canopy, rng)
-			_blob(img, cx - 7, 30, 7, canopy, rng)
-			_blob(img, cx + 7, 31, 7, canopy, rng)
-			for i in 7:
-				img.set_pixel(rng.randi_range(cx - 11, cx + 11), rng.randi_range(15, 36), Color("ffd0f7"))
+			var dark := Color("1d4c3e")
+			var top := _trunk(img, bx, by, top_y, rng.randf_range(3.5, 5.5), 2.0, trunk, dark, rng)
+			for i in rng.randi_range(0, 2):
+				var ay := rng.randi_range(top.y + 12, by - 18)
+				_branch(img, bx, ay, (1.0 if rng.randf() < 0.5 else -1.0), rng.randi_range(5, 10), trunk, dark, rng)
+			_canopy_blobs(img, top.x, top.y, Color("ff4df0"), Color("ffd0f7"), rng)
 	return img
 
-func _build_trees() -> void:
-	for b in [World.WASTES, World.TUNDRA, World.DUNES, World.JUNGLE]:
-		_trees[b] = ImageTexture.create_from_image(_make_tree(b))
-
-func tree_texture(biome: int) -> Texture2D:
-	return _trees.get(biome, _trees.get(World.WASTES))
+func make_tree(biome: int, seed_v: int) -> Texture2D:
+	var key := "%d_%d" % [biome, seed_v]
+	if _tree_cache.has(key):
+		return _tree_cache[key]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v * 1009 + biome * 97 + 54321
+	var tex := ImageTexture.create_from_image(_make_tree(biome, rng))
+	_tree_cache[key] = tex
+	return tex
 
 func sprite(name: String) -> Texture2D:
 	return _sprites.get(name)

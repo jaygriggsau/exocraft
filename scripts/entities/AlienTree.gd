@@ -6,6 +6,7 @@ extends Node2D
 
 var biome := 0
 var column := 0          # world tile-x, used to remember it was harvested
+var seed_v := 0          # per-tree shape seed (so every tree is unique)
 var occupied: Array = [] # tiles the gun can target to harvest it
 var drops: Array = []    # [[item_id, count], ...]
 var harvest_time := 6.0
@@ -22,7 +23,7 @@ func setup(biome_id: int, base_world: Vector2, col: int) -> void:
 	_phase = randf() * TAU
 
 func _ready() -> void:
-	var tex := Art.tree_texture(biome)
+	var tex := Art.make_tree(biome, seed_v)
 	_sprite = Sprite2D.new()
 	_sprite.texture = tex
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

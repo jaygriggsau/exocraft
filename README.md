@@ -51,9 +51,11 @@ godot --path .
 - **Four surface biomes** chosen by low-frequency noise — Neon Wastes, Cryo Tundra,
   Glass Dunes, Toxic Jungle — plus an underground Slate layer that turns into the
   Obsidite biome at depth, threaded with caves and ore veins.
-- **Per-biome surface life**: harvestable **alien trees** (glowing neon canopies,
-  crystalline ice trees, glass succulents, toxic spore-trees) that drop wood when
-  cut with the particle gun, plus **non-solid decorations** (biome grass tufts,
+- **Per-biome surface life**: harvestable **alien trees**, each **procedurally
+  unique** (curved, tapering, bark-textured trunks that lean and branch, with
+  randomized canopies — glowing neon, crystalline ice, glass succulents, toxic
+  spore-trees) that drop wood when cut with the particle gun, plus **non-solid
+  decorations** (biome grass tufts,
   rocks, flowers, mushrooms) the player walks straight through. Harvested trees
   stay gone; everything else regenerates with the chunk.
 - **Ores**: Ferralite (metal), Vyrite (crystal) and Ion ore (energy, glowing),
