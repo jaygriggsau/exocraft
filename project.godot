@@ -22,6 +22,7 @@ Tiles="*res://scripts/autoload/Tiles.gd"
 ItemDB="*res://scripts/autoload/ItemDB.gd"
 Art="*res://scripts/autoload/Art.gd"
 Game="*res://scripts/autoload/Game.gd"
+Music="*res://scripts/autoload/Music.gd"
 
 [display]
 

@@ -113,6 +113,10 @@ godot --path .
   buttons, out-of-combat health regeneration, `Shift` to sprint, an `F11`
   fullscreen toggle, a held-item name label above the hotbar, hover tooltips in
   the cargo grid, and a low-health red vignette.
+- **Procedural 16-bit music**: an atmospheric chiptune (chord pad + triangle
+  bass + soft square arpeggio) synthesised live with an `AudioStreamGenerator`
+  through a reverb/low-pass bus — no audio files. The progression shifts between
+  a brighter day set and a moodier night set. Toggle with `M`.
 - **Underground fog of war**: a cloudy murk hides the underground until you
   explore it, clearing in a radius around the player and staying revealed.
 - **Responsive UI**: a fully anchored HUD that lays out correctly on any

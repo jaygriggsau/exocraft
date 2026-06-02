@@ -262,7 +262,7 @@ func _build_info() -> void:
 	_info_label.position = Vector2(18, 52)
 	add_child_control(_info_label)
 
-	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  P peaceful  •  Esc pause", 13)
+	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  P peaceful  •  M music  •  Esc pause", 13)
 	_hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	add_child_control(_hint)
 
@@ -424,6 +424,7 @@ func _build_pause() -> void:
 	_pause_panel.add_child(_pause_title)
 	_add_pause_button("Resume", func(): _set_paused(false))
 	_add_pause_button("Toggle Fullscreen", _toggle_fullscreen)
+	_add_pause_button("Toggle Music", func(): Music.toggle())
 	_add_pause_button("Toggle Enemies", func(): Game.toggle_enemies())
 
 func _add_pause_button(text: String, cb: Callable) -> void:
@@ -460,6 +461,8 @@ func _unhandled_input(e: InputEvent) -> void:
 		var k := (e as InputEventKey).physical_keycode
 		if k == KEY_F11:
 			_toggle_fullscreen()
+		elif k == KEY_M:
+			Music.toggle()
 		elif k >= KEY_1 and k <= KEY_9:
 			Game.inventory.select(k - KEY_1)
 		elif k == KEY_0:
