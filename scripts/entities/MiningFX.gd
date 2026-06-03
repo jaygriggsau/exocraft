@@ -101,16 +101,16 @@ func _draw() -> void:
 	if active:
 		var center := Vector2((_tile.x + 0.5) * TILE, (_tile.y + 0.5) * TILE)
 		var c := _accent
-		# twin-line glow beam from the gun to the block
-		draw_line(_muzzle, center, Color(c.r, c.g, c.b, 0.22), 3.0)
-		draw_line(_muzzle, center, Color(c.r, c.g, c.b, 0.9), 1.0)
+		# twin-line glow beam from the gun to the block (anti-aliased)
+		draw_line(_muzzle, center, Color(c.r, c.g, c.b, 0.22), 3.0, true)
+		draw_line(_muzzle, center, Color(c.r, c.g, c.b, 0.9), 1.0, true)
 		# flickering muzzle flash at the gun
 		var fl := 1.0 + randf() * 0.8
 		draw_circle(_muzzle, 2.2 * fl, Color(c.r, c.g, c.b, 0.9))
 		draw_circle(_muzzle, 4.0 * fl, Color(c.r, c.g, c.b, 0.28))
 		var r := 4.5 * fl
-		draw_line(_muzzle - Vector2(r, 0), _muzzle + Vector2(r, 0), Color(c.r, c.g, c.b, 0.45), 1.0)
-		draw_line(_muzzle - Vector2(0, r), _muzzle + Vector2(0, r), Color(c.r, c.g, c.b, 0.45), 1.0)
+		draw_line(_muzzle - Vector2(r, 0), _muzzle + Vector2(r, 0), Color(c.r, c.g, c.b, 0.45), 1.0, true)
+		draw_line(_muzzle - Vector2(0, r), _muzzle + Vector2(0, r), Color(c.r, c.g, c.b, 0.45), 1.0, true)
 		# erode the block pixel-by-pixel in step with progress (blocks only)
 		if _dissolve:
 			var removed := int(_progress * 255.0)

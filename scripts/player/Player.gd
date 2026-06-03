@@ -416,4 +416,4 @@ func _draw() -> void:
 		col = Color(0.5, 0.5, 0.55, 0.3)   # buried: too deep to mine
 	elif Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		col = Color(1.0, 0.2, 0.6, 0.6)
-	draw_rect(Rect2(top_left, Vector2(World.TILE, World.TILE)), col, false, 1.0)
+	draw_rect(Rect2(top_left, Vector2(World.TILE, World.TILE)), col, false, 1.0, true)
