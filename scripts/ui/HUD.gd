@@ -54,6 +54,17 @@ var _mm_img: Image
 var _mm_tex: ImageTexture
 var _mm_accum := 0.0
 
+const FM_W := 320
+const FM_H := 184
+var _map_panel: Control
+var _map_dim: ColorRect
+var _map_box: Panel
+var _map_rect: TextureRect
+var _map_title: Label
+var _map_img: Image
+var _map_tex: ImageTexture
+var _map_accum := 0.0
+
 const VIGNETTE_SHADER := """
 shader_type canvas_item;
 uniform float amount : hint_range(0.0, 1.0) = 0.0;
@@ -99,6 +110,7 @@ func _ready() -> void:
 	_build_pause()
 	_build_settings()
 	_build_minimap()
+	_build_fullmap()
 	_build_scanlines()
 	_layout()
 
@@ -135,6 +147,16 @@ func _layout() -> void:
 		_settings_box.position = (s - _settings_box.size) / 2.0
 	if _mm_panel:
 		_mm_panel.position = Vector2(s.x - _mm_panel.size.x - 16, s.y - _mm_panel.size.y - 16)
+	if _map_dim:
+		_map_dim.size = s
+		var dw := minf(s.x * 0.82, s.y * 0.82 * float(FM_W) / FM_H)
+		var dh := dw * float(FM_H) / FM_W
+		var pad := 12.0
+		_map_box.size = Vector2(dw + pad * 2, dh + pad * 2 + 28)
+		_map_box.position = (s - _map_box.size) / 2.0
+		_map_title.position = Vector2(pad + 4, 6)
+		_map_rect.position = Vector2(pad, 34)
+		_map_rect.size = Vector2(dw, dh)
 	_death_label.size.x = s.x
 	_death_label.position = Vector2(0, s.y / 2.0 - 24)
 	# inventory + fabricator centred as a pair
@@ -159,6 +181,11 @@ func _process(_dt: float) -> void:
 	if _mm_accum >= 0.15:
 		_mm_accum = 0.0
 		_update_minimap()
+	if _map_panel.visible:
+		_map_accum += _dt
+		if _map_accum >= 0.3:
+			_map_accum = 0.0
+			_update_fullmap()
 	if _inv_panel.visible:
 		# recipe states depend on which station you're standing near, so refresh live
 		for row in _craft_rows:
@@ -273,17 +300,23 @@ func _build_minimap() -> void:
 	_mm_panel.add_child(_mm_rect)
 
 func _update_minimap() -> void:
+	if _paint_map(_mm_img, MM_W, MM_H):
+		_mm_tex.update(_mm_img)
+
+# Paint an explored-aware map of the world centred on the player into `img`.
+# Returns false if there's nothing to draw yet.
+func _paint_map(img: Image, mw: int, mh: int) -> bool:
 	if Game.player == null or Game.world == null:
-		return
+		return false
 	var w = Game.world
 	var pt: Vector2i = w.world_to_tile(Game.player.global_position)
 	var sky := Color(0.13, 0.22, 0.42)
 	var cave := Color(0.06, 0.07, 0.12)
 	var fog := Color(0.02, 0.03, 0.06)
-	for py in MM_H:
-		var ty := pt.y + py - MM_H / 2
-		for px in MM_W:
-			var tx := pt.x + px - MM_W / 2
+	for py in mh:
+		var ty := pt.y + py - mh / 2
+		for px in mw:
+			var tx := pt.x + px - mw / 2
 			var t := Vector2i(tx, ty)
 			var col: Color
 			if w.is_explored(t):
@@ -296,20 +329,55 @@ func _update_minimap() -> void:
 					col = cave
 			else:
 				col = fog
-			_mm_img.set_pixel(px, py, col)
-	# deployed station / pod markers
+			img.set_pixel(px, py, col)
 	for m in w.deployed():
 		if not is_instance_valid(m):
 			continue
 		var mt: Vector2i = w.world_to_tile(m.global_position - Vector2(0, 8))
-		var mx := mt.x - pt.x + MM_W / 2
-		var my := mt.y - pt.y + MM_H / 2
-		if mx >= 0 and my >= 0 and mx < MM_W and my < MM_H:
-			_mm_img.set_pixel(mx, my, Color("ffd23a"))
-	# player marker
+		var mx := mt.x - pt.x + mw / 2
+		var my := mt.y - pt.y + mh / 2
+		if mx >= 0 and my >= 0 and mx < mw and my < mh:
+			img.set_pixel(mx, my, Color("ffd23a"))
 	for d in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-		_mm_img.set_pixel(clampi(MM_W / 2 + d.x, 0, MM_W - 1), clampi(MM_H / 2 + d.y, 0, MM_H - 1), Color.WHITE)
-	_mm_tex.update(_mm_img)
+		img.set_pixel(clampi(mw / 2 + d.x, 0, mw - 1), clampi(mh / 2 + d.y, 0, mh - 1), Color.WHITE)
+	return true
+
+func _build_fullmap() -> void:
+	_map_img = Image.create_empty(FM_W, FM_H, false, Image.FORMAT_RGBA8)
+	_map_img.fill(Color(0.02, 0.03, 0.06))
+	_map_tex = ImageTexture.create_from_image(_map_img)
+	_map_panel = Control.new()
+	_map_panel.visible = false
+	_map_panel.z_index = 18
+	add_child_control(_map_panel)
+	_map_dim = ColorRect.new()
+	_map_dim.color = Color(0.01, 0.02, 0.04, 0.85)
+	_map_dim.position = Vector2.ZERO
+	_map_panel.add_child(_map_dim)
+	_map_box = Panel.new()
+	_map_box.add_theme_stylebox_override("panel", _panel_sb())
+	_map_panel.add_child(_map_box)
+	_map_title = _make_label("MAP", 22)
+	_map_title.modulate = Color("2dffff")
+	_map_box.add_child(_map_title)
+	_map_rect = TextureRect.new()
+	_map_rect.texture = _map_tex
+	_map_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	_map_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_map_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map_box.add_child(_map_rect)
+
+func _toggle_map() -> void:
+	var open := not _map_panel.visible
+	_map_panel.visible = open
+	Game.ui_blocking = open
+	if open:
+		_layout()
+		_update_fullmap()
+
+func _update_fullmap() -> void:
+	if _paint_map(_map_img, FM_W, FM_H):
+		_map_tex.update(_map_img)
 
 func _build_scanlines() -> void:
 	_scan = ColorRect.new()
@@ -345,7 +413,7 @@ func _build_info() -> void:
 	_info_label.position = Vector2(18, 52)
 	add_child_control(_info_label)
 
-	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  P peaceful  •  M music  •  Esc pause", 13)
+	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  M map  •  P peaceful  •  Esc pause", 13)
 	_hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	add_child_control(_hint)
 
@@ -555,6 +623,7 @@ func _build_settings() -> void:
 	vb.add_child(_control_row("jump", "Jump"))
 	vb.add_child(_control_row("toggle_inventory", "Inventory"))
 	vb.add_child(_control_row("interact", "Storage Pod"))
+	vb.add_child(_control_row("map", "Map"))
 	vb.add_child(_control_row("sprint", "Sprint"))
 
 	var reset := Button.new()
@@ -714,15 +783,18 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e.is_action_pressed("pause"):
 		if _settings_panel.visible:
 			_close_settings()
+		elif _map_panel.visible:
+			_toggle_map()
 		else:
 			_set_paused(not get_tree().paused)
+		return
+	if e.is_action_pressed("map"):
+		_toggle_map()
 		return
 	if e is InputEventKey and e.pressed and not e.echo:
 		var k := (e as InputEventKey).physical_keycode
 		if k == KEY_F11:
 			Settings.set_fullscreen(not Settings.fullscreen)
-		elif k == KEY_M:
-			Settings.set_music_on(not Settings.music_on)
 		elif k >= KEY_1 and k <= KEY_9:
 			Game.inventory.select(k - KEY_1)
 		elif k == KEY_0:

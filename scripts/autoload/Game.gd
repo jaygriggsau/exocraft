@@ -45,6 +45,7 @@ func _setup_input() -> void:
 	_add_action("pause", [KEY_ESCAPE])
 	_add_action("sprint", [KEY_SHIFT])
 	_add_action("interact", [KEY_F])   # open a nearby storage pod
+	_add_action("map", [KEY_M])        # toggle the fullscreen map
 
 func _add_action(name: String, keys: Array) -> void:
 	if InputMap.has_action(name):

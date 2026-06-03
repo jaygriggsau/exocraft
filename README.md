@@ -123,10 +123,10 @@ godot --path .
   bass + soft square arpeggio) synthesised live with an `AudioStreamGenerator`
   through a reverb/low-pass bus — no audio files. The progression shifts between
   a brighter day set and a moodier night set. Toggle with `M`.
-- **Fog of war**: a corner **minimap** that reveals as you explore (unexplored
-  areas stay dark), with biome-coloured terrain, a player marker and deployed
-  station/pod markers — plus an in-world cloudy murk that hides the underground
-  until you get close.
+- **Fog of war**: a corner **minimap** and a toggleable **fullscreen map** (`M`)
+  that reveal as you explore (unexplored areas stay dark), with biome-coloured
+  terrain, a player marker and deployed station/pod markers — plus an in-world
+  cloudy murk that hides the underground until you get close.
 - **Responsive UI**: a fully anchored HUD that lays out correctly on any
   resolution / aspect ratio (1080p, 1440p, 4K, ultrawide), with a large
   zoomed-in view and chunky pixel UI.

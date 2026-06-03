@@ -11,6 +11,7 @@ const DEFAULT_BINDS := {
 	"jump": [KEY_SPACE, KEY_W, KEY_UP],
 	"toggle_inventory": [KEY_E, KEY_TAB],
 	"interact": [KEY_F],
+	"map": [KEY_M],
 	"sprint": [KEY_SHIFT],
 	"toggle_enemies": [KEY_P],
 	"pause": [KEY_ESCAPE],
