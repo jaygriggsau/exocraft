@@ -45,6 +45,15 @@ var _settings_dim: ColorRect
 var _rebind_action := ""
 var _rebind_button: Button
 
+const MM_W := 120
+const MM_H := 78
+const MM_SCALE := 2
+var _mm_panel: Panel
+var _mm_rect: TextureRect
+var _mm_img: Image
+var _mm_tex: ImageTexture
+var _mm_accum := 0.0
+
 const VIGNETTE_SHADER := """
 shader_type canvas_item;
 uniform float amount : hint_range(0.0, 1.0) = 0.0;
@@ -89,6 +98,7 @@ func _ready() -> void:
 	_build_death_label()
 	_build_pause()
 	_build_settings()
+	_build_minimap()
 	_build_scanlines()
 	_layout()
 
@@ -123,6 +133,8 @@ func _layout() -> void:
 	if _settings_dim:
 		_settings_dim.size = s
 		_settings_box.position = (s - _settings_box.size) / 2.0
+	if _mm_panel:
+		_mm_panel.position = Vector2(s.x - _mm_panel.size.x - 16, s.y - _mm_panel.size.y - 16)
 	_death_label.size.x = s.x
 	_death_label.position = Vector2(0, s.y / 2.0 - 24)
 	# inventory + fabricator centred as a pair
@@ -143,6 +155,10 @@ func _process(_dt: float) -> void:
 	_peaceful_label.visible = not Game.enemies_enabled
 	_update_vignette()
 	_update_tooltip()
+	_mm_accum += _dt
+	if _mm_accum >= 0.15:
+		_mm_accum = 0.0
+		_update_minimap()
 	if _inv_panel.visible:
 		# recipe states depend on which station you're standing near, so refresh live
 		for row in _craft_rows:
@@ -237,6 +253,63 @@ func _panel_sb() -> StyleBoxFlat:
 	var s := _sb(Color(0.03, 0.05, 0.11, 0.94), Color("2dffff"), 2)
 	s.border_color = Color(0.16, 0.7, 0.85, 0.9)
 	return s
+
+func _build_minimap() -> void:
+	_mm_img = Image.create_empty(MM_W, MM_H, false, Image.FORMAT_RGBA8)
+	_mm_img.fill(Color(0.02, 0.03, 0.06))
+	_mm_tex = ImageTexture.create_from_image(_mm_img)
+	_mm_panel = Panel.new()
+	_mm_panel.add_theme_stylebox_override("panel", _panel_sb())
+	_mm_panel.size = Vector2(MM_W * MM_SCALE + 10, MM_H * MM_SCALE + 10)
+	_mm_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child_control(_mm_panel)
+	_mm_rect = TextureRect.new()
+	_mm_rect.texture = _mm_tex
+	_mm_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	_mm_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_mm_rect.position = Vector2(5, 5)
+	_mm_rect.size = Vector2(MM_W * MM_SCALE, MM_H * MM_SCALE)
+	_mm_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mm_panel.add_child(_mm_rect)
+
+func _update_minimap() -> void:
+	if Game.player == null or Game.world == null:
+		return
+	var w = Game.world
+	var pt: Vector2i = w.world_to_tile(Game.player.global_position)
+	var sky := Color(0.13, 0.22, 0.42)
+	var cave := Color(0.06, 0.07, 0.12)
+	var fog := Color(0.02, 0.03, 0.06)
+	for py in MM_H:
+		var ty := pt.y + py - MM_H / 2
+		for px in MM_W:
+			var tx := pt.x + px - MM_W / 2
+			var t := Vector2i(tx, ty)
+			var col: Color
+			if w.is_explored(t):
+				var id: int = w.get_tile(t)
+				if Tiles.is_solid(id):
+					col = Tiles.def(id).base
+				elif ty < w.surface_height(tx):
+					col = sky
+				else:
+					col = cave
+			else:
+				col = fog
+			_mm_img.set_pixel(px, py, col)
+	# deployed station / pod markers
+	for m in w.deployed():
+		if not is_instance_valid(m):
+			continue
+		var mt: Vector2i = w.world_to_tile(m.global_position - Vector2(0, 8))
+		var mx := mt.x - pt.x + MM_W / 2
+		var my := mt.y - pt.y + MM_H / 2
+		if mx >= 0 and my >= 0 and mx < MM_W and my < MM_H:
+			_mm_img.set_pixel(mx, my, Color("ffd23a"))
+	# player marker
+	for d in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		_mm_img.set_pixel(clampi(MM_W / 2 + d.x, 0, MM_W - 1), clampi(MM_H / 2 + d.y, 0, MM_H - 1), Color.WHITE)
+	_mm_tex.update(_mm_img)
 
 func _build_scanlines() -> void:
 	_scan = ColorRect.new()

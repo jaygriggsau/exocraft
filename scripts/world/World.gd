@@ -25,6 +25,7 @@ var tilemap: TileMapLayer
 var decor_map: TileMapLayer         # non-solid surface decorations
 var fog_map: TileMapLayer           # fog of war over unexplored underground
 var _explored := {}                 # Vector2i tile -> true (revealed)
+var _mapped := {}                   # Vector2i tile -> true (revealed on the minimap)
 var _last_reveal := Vector2i(999999, 999999)
 var chunks := {}                    # Vector2i -> PackedInt32Array
 var _loaded := {}                   # Vector2i -> true (currently rendered)
@@ -113,9 +114,10 @@ func _physics_process(_dt: float) -> void:
 	_stream(center)
 
 const REVEAL_RADIUS := 11
+const MAP_RADIUS := 26          ## how far the minimap reveals around the player
 
 func _reveal_around(c: Vector2i) -> void:
-	# clear fog within a circle of the player (underground only); stays revealed
+	# clear the in-world fog within a circle of the player (underground only)
 	for dy in range(-REVEAL_RADIUS, REVEAL_RADIUS + 1):
 		for dx in range(-REVEAL_RADIUS, REVEAL_RADIUS + 1):
 			if dx * dx + dy * dy > REVEAL_RADIUS * REVEAL_RADIUS:
@@ -127,6 +129,17 @@ func _reveal_around(c: Vector2i) -> void:
 				continue
 			_explored[t] = true
 			fog_map.erase_cell(t)
+	# reveal a wider area on the minimap (everywhere, stays revealed)
+	for dy in range(-MAP_RADIUS, MAP_RADIUS + 1):
+		for dx in range(-MAP_RADIUS, MAP_RADIUS + 1):
+			if dx * dx + dy * dy <= MAP_RADIUS * MAP_RADIUS:
+				_mapped[Vector2i(c.x + dx, c.y + dy)] = true
+
+func is_explored(t: Vector2i) -> bool:
+	return _mapped.has(t)
+
+func deployed() -> Array:
+	return _stations + _pods
 
 func _fog_chunk(cc: Vector2i) -> void:
 	var oy := cc.y * CHUNK
