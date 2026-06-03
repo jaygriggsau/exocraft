@@ -205,6 +205,7 @@ func _try_mine(dt: float) -> bool:
 			_mine_progress = 0.0
 			_mine_obj = null
 			Game.world.dismantle(struct)
+			Sfx.play("deploy")
 		return true
 
 	var t := _target_tile()
@@ -229,6 +230,7 @@ func _try_mine(dt: float) -> bool:
 		if _mine_progress >= hdur:
 			_mine_progress = 0.0
 			Game.world.harvest_tree(tree, t)
+			Sfx.play("mine")
 		return true
 
 	var id: int = Game.world.get_tile(t)
@@ -256,6 +258,7 @@ func _try_mine(dt: float) -> bool:
 	if _mine_progress >= dur:
 		_mine_progress = 0.0
 		Game.world.set_tile(t, Tiles.AIR)
+		Sfx.play("mine")
 		_spawn_drop(t, Tiles.drop_item(id))
 	return true
 
@@ -316,6 +319,7 @@ func _try_deploy(item_id: String) -> void:
 	if tile_rect.intersects(body):
 		return                              # don't drop it on ourselves
 	Game.world.spawn_structure(item_id, t)
+	Sfx.play("deploy")
 	inv.consume_selected(1)
 	_place_cd = 0.3
 
@@ -346,6 +350,7 @@ func _try_fire(item_id: String) -> void:
 	dir = dir.normalized()
 	var p := Projectile.new()
 	p.setup(global_position + dir * 10.0, dir, dmg, spd, true)
+	Sfx.play("shoot")
 	Game.world.add_child(p)
 	_fire_cd = cd
 	# kickback + muzzle flash
@@ -394,6 +399,7 @@ func take_damage(amount: float) -> void:
 	if _invuln > 0.0:
 		return
 	_invuln = INVULN
+	Sfx.play("hit")
 	_no_dmg = 0.0
 	Game.damage_player(amount)
 	# knockback flash

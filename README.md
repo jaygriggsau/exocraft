@@ -109,9 +109,12 @@ godot --path .
 - **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
 - **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
   enemies) for relaxed building.
-- **Settings menu** (pause → Settings): graphics (fullscreen, VSync,
-  anti-aliasing, bloom, scanlines) and audio (master/music volume, music
-  on/off), persisted to `user://settings.cfg`.
+- **Settings menu** (pause → Settings): graphics (fullscreen, VSync, window
+  size, anti-aliasing, bloom, scanlines), audio (master / music / SFX volume,
+  music on/off), and **rebindable controls**, plus a **Reset to Default** —
+  persisted to `user://settings.cfg`.
+- **Procedural SFX**: short blips (mine, shoot, craft, deploy, hit, pickup)
+  synthesised into clips at startup (no audio files) on their own SFX bus.
 - **Quality-of-life**: a pause menu (`Esc`), out-of-combat health regeneration,
   `Shift` to sprint, an `F11` fullscreen toggle, `M` music toggle, a held-item
   name label above the hotbar, hover tooltips in the cargo grid, and a

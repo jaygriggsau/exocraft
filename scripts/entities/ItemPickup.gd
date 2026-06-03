@@ -55,6 +55,7 @@ func _collect() -> void:
 		return
 	var leftover := Game.inventory.add(item_id, count)
 	if leftover <= 0:
+		Sfx.play("pickup", randf_range(0.95, 1.1))
 		queue_free()
 	else:
 		count = leftover

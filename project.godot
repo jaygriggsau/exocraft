@@ -23,6 +23,7 @@ ItemDB="*res://scripts/autoload/ItemDB.gd"
 Art="*res://scripts/autoload/Art.gd"
 Game="*res://scripts/autoload/Game.gd"
 Music="*res://scripts/autoload/Music.gd"
+Sfx="*res://scripts/autoload/Sfx.gd"
 Settings="*res://scripts/autoload/Settings.gd"
 
 [display]

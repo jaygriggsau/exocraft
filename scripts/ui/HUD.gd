@@ -42,6 +42,8 @@ var _pause_buttons := []
 var _settings_panel: Control
 var _settings_box: Panel
 var _settings_dim: ColorRect
+var _rebind_action := ""
+var _rebind_button: Button
 
 const VIGNETTE_SHADER := """
 shader_type canvas_item;
@@ -445,35 +447,86 @@ func _build_settings() -> void:
 	_settings_panel.add_child(_settings_dim)
 	_settings_box = Panel.new()
 	_settings_box.add_theme_stylebox_override("panel", _panel_sb())
-	_settings_box.size = Vector2(540, 560)
+	_settings_box.size = Vector2(560, 600)
 	_settings_panel.add_child(_settings_box)
 	var title := _make_label("SETTINGS", 28)
 	title.modulate = Color("2dffff")
 	title.position = Vector2(26, 18)
 	_settings_box.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20, 64)
+	scroll.size = Vector2(520, 476)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_settings_box.add_child(scroll)
 	var vb := VBoxContainer.new()
-	vb.position = Vector2(26, 68)
-	vb.custom_minimum_size = Vector2(540 - 52, 0)
+	vb.custom_minimum_size = Vector2(500, 0)
 	vb.add_theme_constant_override("separation", 9)
-	_settings_box.add_child(vb)
+	scroll.add_child(vb)
 
 	vb.add_child(_section("GRAPHICS"))
 	vb.add_child(_toggle_row("Fullscreen", func(): return Settings.fullscreen, func(v): Settings.set_fullscreen(v)))
 	vb.add_child(_toggle_row("VSync", func(): return Settings.vsync, func(v): Settings.set_vsync(v)))
+	vb.add_child(_option_row("Window Size", ["1280x720", "1600x900", "1920x1080", "2560x1440"], Settings.res_index, func(i): Settings.set_resolution(i)))
 	vb.add_child(_option_row("Anti-aliasing", ["Off", "2x", "4x", "8x"], Settings.msaa, func(i): Settings.set_msaa(i)))
 	vb.add_child(_toggle_row("Bloom", func(): return Settings.bloom, func(v): Settings.set_bloom(v)))
 	vb.add_child(_toggle_row("Scanlines (CRT)", func(): return Settings.scanlines, func(v): _apply_scanlines(v)))
 	vb.add_child(_section("AUDIO"))
 	vb.add_child(_slider_row("Master Volume", Settings.master, func(v): Settings.set_master(v)))
 	vb.add_child(_slider_row("Music Volume", Settings.music, func(v): Settings.set_music_vol(v)))
+	vb.add_child(_slider_row("SFX Volume", Settings.sfx, func(v): Settings.set_sfx_vol(v)))
 	vb.add_child(_toggle_row("Music", func(): return Settings.music_on, func(v): Settings.set_music_on(v)))
+	vb.add_child(_section("CONTROLS"))
+	vb.add_child(_control_row("move_left", "Move Left"))
+	vb.add_child(_control_row("move_right", "Move Right"))
+	vb.add_child(_control_row("jump", "Jump"))
+	vb.add_child(_control_row("toggle_inventory", "Inventory"))
+	vb.add_child(_control_row("interact", "Storage Pod"))
+	vb.add_child(_control_row("sprint", "Sprint"))
 
+	var reset := Button.new()
+	reset.text = "Reset to Default"
+	reset.add_theme_font_size_override("font_size", 16)
+	reset.size = Vector2(230, 40)
+	reset.position = Vector2(26, 552)
+	reset.pressed.connect(_reset_settings)
+	_settings_box.add_child(reset)
 	var back := Button.new()
 	back.text = "Back"
 	back.add_theme_font_size_override("font_size", 18)
-	back.custom_minimum_size = Vector2(140, 42)
+	back.size = Vector2(170, 40)
+	back.position = Vector2(560 - 26 - 170, 552)
 	back.pressed.connect(_close_settings)
-	vb.add_child(back)
+	_settings_box.add_child(back)
+
+func _control_row(action: String, text: String) -> Control:
+	var h := HBoxContainer.new()
+	h.custom_minimum_size = Vector2(0, 34)
+	h.add_child(_settings_label(text))
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(150, 30)
+	b.add_theme_font_size_override("font_size", 15)
+	b.text = OS.get_keycode_string(Settings.key_for(action))
+	var press := func(): _begin_rebind(action, b)
+	b.pressed.connect(press)
+	h.add_child(b)
+	return h
+
+func _begin_rebind(action: String, btn: Button) -> void:
+	_rebind_action = action
+	_rebind_button = btn
+	btn.text = "Press a key..."
+
+func _reset_settings() -> void:
+	Settings.reset()
+	_scan.visible = Settings.scanlines
+	_rebuild_settings()
+
+func _rebuild_settings() -> void:
+	_settings_panel.queue_free()
+	_build_settings()
+	_settings_panel.visible = true
+	_layout()
 
 func _section(text: String) -> Label:
 	var l := _make_label("— " + text + " —", 17)
@@ -572,6 +625,18 @@ func _build_death_label() -> void:
 	add_child_control(_death_label)
 
 # ---------------------------------------------------------------------------
+func _input(e: InputEvent) -> void:
+	# capture a key while rebinding a control
+	if _rebind_action == "":
+		return
+	if e is InputEventKey and e.pressed and not e.echo:
+		var kc := (e as InputEventKey).physical_keycode
+		if kc != KEY_ESCAPE:
+			Settings.rebind(_rebind_action, kc)
+		_rebind_button.text = OS.get_keycode_string(Settings.key_for(_rebind_action))
+		_rebind_action = ""
+		get_viewport().set_input_as_handled()
+
 func _unhandled_input(e: InputEvent) -> void:
 	if e.is_action_pressed("pause"):
 		if _settings_panel.visible:

@@ -153,6 +153,7 @@ func try_craft(r: Recipe) -> bool:
 			_consume(inp.item.id, inp.quantity)
 	Game.inventory.add(r.output_item.id, r.output_quantity)
 	Game.crafted[r.output_item.id] = true
+	Sfx.play("craft")
 	return true
 
 ## Short human reason a recipe is locked, for the UI ("needs Fabricator", etc.)
