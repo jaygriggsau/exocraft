@@ -15,6 +15,7 @@ var _tile_images := {}   # tile id -> Array[Image] (one per variant)
 var _item_icons := {}    # item id -> ImageTexture
 var _sprites := {}       # name   -> ImageTexture
 var _light_tex: ImageTexture
+var _vision_tex: ImageTexture
 var _player_frames: SpriteFrames
 var _creature_frames := {}       # species name -> SpriteFrames
 var decor_tileset: TileSet
@@ -34,6 +35,7 @@ func _ready() -> void:
 	_build_item_icons()
 	_build_sprites()
 	_build_light_texture()
+	_build_vision_texture()
 	_build_player_frames()
 	_build_decor_tileset()
 	_build_fog_tileset()
@@ -579,6 +581,24 @@ func _build_light_texture() -> void:
 
 func light_texture() -> Texture2D:
 	return _light_tex
+
+func _build_vision_texture() -> void:
+	# A radial black veil: transparent in the centre, fading to fully opaque
+	# black at the rim. Drawn under the player so the hard edge of the tile
+	# fog dissolves into a soft gradient ring instead of a crisp boundary.
+	var size := 192
+	var img := _new_image(size, size)
+	var c := size / 2.0
+	for y in size:
+		for x in size:
+			var d := Vector2(x - c, y - c).length() / c
+			# clear until ~halfway, then ramp to solid black at the edge
+			var a := smoothstep(0.5, 1.0, d)
+			img.set_pixel(x, y, Color(0.0, 0.0, 0.0, a))
+	_vision_tex = ImageTexture.create_from_image(img)
+
+func vision_texture() -> Texture2D:
+	return _vision_tex
 
 func _ptex(img: Image) -> ImageTexture:
 	return ImageTexture.create_from_image(img)

@@ -127,7 +127,10 @@ godot --path .
   that reveal as you explore (unexplored areas stay dark), with biome-coloured
   terrain, a player marker and deployed station/pod markers — plus an in-world
   **black fog** that fully hides unexplored underground (above ground stays
-  clear), clearing in a vision circle around the player.
+  clear), clearing in a vision circle around the player — whose edge is a
+  **soft radial gradient** (a veil that fades from clear to black and deepens
+  with depth) so the fog dissolves smoothly instead of ending on a hard tile
+  boundary.
 - **Responsive UI**: a fully anchored HUD that lays out correctly on any
   resolution / aspect ratio (1080p, 1440p, 4K, ultrawide), with a large
   zoomed-in view and chunky pixel UI.
