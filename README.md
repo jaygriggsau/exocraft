@@ -126,7 +126,8 @@ godot --path .
 - **Fog of war**: a corner **minimap** and a toggleable **fullscreen map** (`M`)
   that reveal as you explore (unexplored areas stay dark), with biome-coloured
   terrain, a player marker and deployed station/pod markers — plus an in-world
-  cloudy murk that hides the underground until you get close.
+  **black fog** that fully hides unexplored underground (above ground stays
+  clear), clearing in a vision circle around the player.
 - **Responsive UI**: a fully anchored HUD that lays out correctly on any
   resolution / aspect ratio (1080p, 1440p, 4K, ultrawide), with a large
   zoomed-in view and chunky pixel UI.

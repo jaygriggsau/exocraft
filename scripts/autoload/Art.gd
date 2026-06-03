@@ -683,23 +683,22 @@ func decor_atlas_coords(id: int) -> Vector2i:
 # Fog of war (cloudy murk over unexplored underground; non-solid)
 # ---------------------------------------------------------------------------
 func _make_fog_image(v: int) -> Image:
+	# solid black fog of war: fully opaque so unexplored ground is hidden
 	var img := _new_image(TS, TS)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4000 + v
-	var base := Color(0.05, 0.07, 0.13)
 	for y in TS:
 		for x in TS:
-			img.set_pixel(x, y, Color(base.r, base.g, base.b, rng.randf_range(0.86, 0.95)))
-	# a few lighter/darker cloud clumps for texture
-	for c in 5:
+			var k := rng.randf_range(0.0, 0.025)   # near-black with faint grain
+			img.set_pixel(x, y, Color(k, k, k + 0.01, 1.0))
+	# a few barely-lighter wisps so it reads as fog, not a flat void
+	for c in 4:
 		var cx := rng.randi_range(1, TS - 3)
 		var cy := rng.randi_range(1, TS - 3)
-		var lighter := rng.randf() < 0.5
-		var col := base.lightened(0.12) if lighter else base.darkened(0.4)
 		for i in 4:
 			var px := clampi(cx + rng.randi_range(0, 2), 0, TS - 1)
 			var py := clampi(cy + rng.randi_range(0, 2), 0, TS - 1)
-			img.set_pixel(px, py, Color(col.r, col.g, col.b, rng.randf_range(0.85, 0.95)))
+			img.set_pixel(px, py, Color(0.05, 0.055, 0.07, 1.0))
 	return img
 
 func _build_fog_tileset() -> void:

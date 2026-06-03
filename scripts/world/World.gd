@@ -63,6 +63,7 @@ func _ready() -> void:
 	fog_map.tile_set = Art.fog_tileset
 	fog_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fog_map.z_index = 3                 # clouds terrain + creatures until explored
+	fog_map.light_mask = 0              # lights never reveal the fog; it stays black
 	add_child(fog_map)
 
 func _setup_noise() -> void:
@@ -113,7 +114,7 @@ func _physics_process(_dt: float) -> void:
 	_last_center = center
 	_stream(center)
 
-const REVEAL_RADIUS := 11
+const REVEAL_RADIUS := 7        ## in-world black-fog vision radius (kept tighter than the view)
 const MAP_RADIUS := 26          ## how far the minimap reveals around the player
 
 func _reveal_around(c: Vector2i) -> void:
