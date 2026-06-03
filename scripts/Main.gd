@@ -45,6 +45,8 @@ func _build_environment() -> void:
 	env.glow_bloom = 0.15
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.glow_hdr_threshold = 1.0
+	env.glow_enabled = Settings.bloom
+	Game.environment = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

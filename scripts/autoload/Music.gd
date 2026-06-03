@@ -113,5 +113,8 @@ func _sqr(ph: float) -> float:
 func toggle() -> void:
 	_enabled = not _enabled
 
+func set_enabled(v: bool) -> void:
+	_enabled = v
+
 func is_enabled() -> bool:
 	return _enabled

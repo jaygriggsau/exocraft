@@ -16,6 +16,7 @@ signal enemies_toggled(enabled: bool)
 var world = null
 var player = null
 var inventory: Inventory = null
+var environment: Environment = null   ## the WorldEnvironment's Environment (for bloom toggle)
 
 var max_health := 100.0
 var health := 100.0

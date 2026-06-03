@@ -39,6 +39,9 @@ var _pause_panel: Control
 var _pause_dim: ColorRect
 var _pause_title: Label
 var _pause_buttons := []
+var _settings_panel: Control
+var _settings_box: Panel
+var _settings_dim: ColorRect
 
 const VIGNETTE_SHADER := """
 shader_type canvas_item;
@@ -83,6 +86,7 @@ func _ready() -> void:
 	_build_vignette()
 	_build_death_label()
 	_build_pause()
+	_build_settings()
 	_build_scanlines()
 	_layout()
 
@@ -114,6 +118,9 @@ func _layout() -> void:
 	_pause_title.position = Vector2(0, s.y / 2.0 - 170)
 	for j in _pause_buttons.size():
 		_pause_buttons[j].position = Vector2(s.x / 2.0 - 130, s.y / 2.0 - 90 + j * 60)
+	if _settings_dim:
+		_settings_dim.size = s
+		_settings_box.position = (s - _settings_box.size) / 2.0
 	_death_label.size.x = s.x
 	_death_label.position = Vector2(0, s.y / 2.0 - 24)
 	# inventory + fabricator centred as a pair
@@ -238,6 +245,7 @@ func _build_scanlines() -> void:
 	var m := ShaderMaterial.new()
 	m.shader = sh
 	_scan.material = m
+	_scan.visible = Settings.scanlines
 	add_child_control(_scan)
 
 func _build_health() -> void:
@@ -423,9 +431,120 @@ func _build_pause() -> void:
 	_pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pause_panel.add_child(_pause_title)
 	_add_pause_button("Resume", func(): _set_paused(false))
-	_add_pause_button("Toggle Fullscreen", _toggle_fullscreen)
-	_add_pause_button("Toggle Music", func(): Music.toggle())
+	_add_pause_button("Settings", func(): _open_settings())
 	_add_pause_button("Toggle Enemies", func(): Game.toggle_enemies())
+
+func _build_settings() -> void:
+	_settings_panel = Control.new()
+	_settings_panel.visible = false
+	_settings_panel.z_index = 22
+	add_child_control(_settings_panel)
+	_settings_dim = ColorRect.new()
+	_settings_dim.color = Color(0.02, 0.02, 0.05, 0.82)
+	_settings_dim.position = Vector2.ZERO
+	_settings_panel.add_child(_settings_dim)
+	_settings_box = Panel.new()
+	_settings_box.add_theme_stylebox_override("panel", _panel_sb())
+	_settings_box.size = Vector2(540, 560)
+	_settings_panel.add_child(_settings_box)
+	var title := _make_label("SETTINGS", 28)
+	title.modulate = Color("2dffff")
+	title.position = Vector2(26, 18)
+	_settings_box.add_child(title)
+	var vb := VBoxContainer.new()
+	vb.position = Vector2(26, 68)
+	vb.custom_minimum_size = Vector2(540 - 52, 0)
+	vb.add_theme_constant_override("separation", 9)
+	_settings_box.add_child(vb)
+
+	vb.add_child(_section("GRAPHICS"))
+	vb.add_child(_toggle_row("Fullscreen", func(): return Settings.fullscreen, func(v): Settings.set_fullscreen(v)))
+	vb.add_child(_toggle_row("VSync", func(): return Settings.vsync, func(v): Settings.set_vsync(v)))
+	vb.add_child(_option_row("Anti-aliasing", ["Off", "2x", "4x", "8x"], Settings.msaa, func(i): Settings.set_msaa(i)))
+	vb.add_child(_toggle_row("Bloom", func(): return Settings.bloom, func(v): Settings.set_bloom(v)))
+	vb.add_child(_toggle_row("Scanlines (CRT)", func(): return Settings.scanlines, func(v): _apply_scanlines(v)))
+	vb.add_child(_section("AUDIO"))
+	vb.add_child(_slider_row("Master Volume", Settings.master, func(v): Settings.set_master(v)))
+	vb.add_child(_slider_row("Music Volume", Settings.music, func(v): Settings.set_music_vol(v)))
+	vb.add_child(_toggle_row("Music", func(): return Settings.music_on, func(v): Settings.set_music_on(v)))
+
+	var back := Button.new()
+	back.text = "Back"
+	back.add_theme_font_size_override("font_size", 18)
+	back.custom_minimum_size = Vector2(140, 42)
+	back.pressed.connect(_close_settings)
+	vb.add_child(back)
+
+func _section(text: String) -> Label:
+	var l := _make_label("— " + text + " —", 17)
+	l.modulate = Color("9fb0ff")
+	l.custom_minimum_size = Vector2(0, 24)
+	return l
+
+func _settings_label(text: String) -> Label:
+	var l := _make_label(text, 16)
+	l.custom_minimum_size = Vector2(300, 0)
+	return l
+
+func _toggle_row(text: String, get_cb: Callable, set_cb: Callable) -> Control:
+	var h := HBoxContainer.new()
+	h.custom_minimum_size = Vector2(0, 34)
+	h.add_child(_settings_label(text))
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(130, 30)
+	b.add_theme_font_size_override("font_size", 15)
+	b.text = "On" if bool(get_cb.call()) else "Off"
+	var on_press := func():
+		var nv := not bool(get_cb.call())
+		set_cb.call(nv)
+		b.text = "On" if nv else "Off"
+	b.pressed.connect(on_press)
+	h.add_child(b)
+	return h
+
+func _option_row(text: String, options: Array, current: int, set_cb: Callable) -> Control:
+	var h := HBoxContainer.new()
+	h.custom_minimum_size = Vector2(0, 34)
+	h.add_child(_settings_label(text))
+	var ob := OptionButton.new()
+	ob.custom_minimum_size = Vector2(130, 30)
+	for o in options:
+		ob.add_item(o)
+	ob.selected = current
+	ob.item_selected.connect(func(i): set_cb.call(i))
+	h.add_child(ob)
+	return h
+
+func _slider_row(text: String, value: float, set_cb: Callable) -> Control:
+	var h := HBoxContainer.new()
+	h.custom_minimum_size = Vector2(0, 34)
+	h.add_child(_settings_label(text))
+	var sl := HSlider.new()
+	sl.min_value = 0.0
+	sl.max_value = 1.0
+	sl.step = 0.05
+	sl.value = value
+	sl.custom_minimum_size = Vector2(190, 24)
+	var vl := _make_label("%d%%" % int(value * 100), 14)
+	vl.custom_minimum_size = Vector2(56, 0)
+	var on_change := func(v: float):
+		set_cb.call(v)
+		vl.text = "%d%%" % int(v * 100)
+	sl.value_changed.connect(on_change)
+	h.add_child(sl)
+	h.add_child(vl)
+	return h
+
+func _apply_scanlines(v: bool) -> void:
+	Settings.set_scanlines(v)
+	_scan.visible = v
+
+func _open_settings() -> void:
+	_settings_panel.visible = true
+	_layout()
+
+func _close_settings() -> void:
+	_settings_panel.visible = false
 
 func _add_pause_button(text: String, cb: Callable) -> void:
 	var b := Button.new()
@@ -455,14 +574,17 @@ func _build_death_label() -> void:
 # ---------------------------------------------------------------------------
 func _unhandled_input(e: InputEvent) -> void:
 	if e.is_action_pressed("pause"):
-		_set_paused(not get_tree().paused)
+		if _settings_panel.visible:
+			_close_settings()
+		else:
+			_set_paused(not get_tree().paused)
 		return
 	if e is InputEventKey and e.pressed and not e.echo:
 		var k := (e as InputEventKey).physical_keycode
 		if k == KEY_F11:
-			_toggle_fullscreen()
+			Settings.set_fullscreen(not Settings.fullscreen)
 		elif k == KEY_M:
-			Music.toggle()
+			Settings.set_music_on(not Settings.music_on)
 		elif k >= KEY_1 and k <= KEY_9:
 			Game.inventory.select(k - KEY_1)
 		elif k == KEY_0:
