@@ -128,7 +128,7 @@ func _physics_process(_dt: float) -> void:
 	_last_center = center
 	_stream(center)
 
-const REVEAL_RADIUS := 9        ## in-world black-fog vision radius (kept tighter than the view)
+const REVEAL_RADIUS := 7        ## in-world black-fog vision radius (kept tighter than the view)
 const MAP_RADIUS := 26          ## how far the minimap reveals around the player
 
 func _update_vision() -> void:
