@@ -38,7 +38,6 @@ window/stretch/aspect="expand"
 theme/default_font_antialiasing=0
 theme/default_font_hinting=0
 theme/default_font_subpixel_positioning=0
-theme/default_font_generate_mipmaps=false
 
 [rendering]
 
