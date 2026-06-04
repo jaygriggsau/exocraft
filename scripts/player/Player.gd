@@ -19,6 +19,10 @@ const INVULN := 0.6
 const FIRE_KICK := 3.5             # blaster recoil impulse (px)
 const MINE_RECOIL := 1.3           # steady kickback while mining (px)
 const RECOIL_RECOVER := 36.0       # px/s the sprite eases back
+const WATER_MOVE := 0.6            # horizontal speed multiplier while submerged
+const WATER_GRAVITY := 0.3         # gravity multiplier while submerged (buoyancy)
+const POUR_RATE := 0.5             # liquid added per pour tick (cells fill fast)
+const DRAIN_RATE := 0.6            # liquid sucked up per mine tick
 
 var inv: Inventory
 var sprite: AnimatedSprite2D
@@ -91,6 +95,7 @@ func _ready() -> void:
 func _starting_kit() -> void:
 	# starter kit: a tool, a few meds, and raws to bootstrap the crafting tree
 	inv.add("pickaxe", 1)
+	inv.add("hydro_cell", 1)
 	inv.add("med_cell", 3)
 	inv.add("scrap", 10)
 	inv.add("stone", 8)
@@ -109,8 +114,13 @@ func _physics_process(dt: float) -> void:
 	if _no_dmg >= REGEN_DELAY and Game.health < Game.max_health:
 		Game.heal_player(REGEN_RATE * dt)
 
-	# horizontal movement (Shift to sprint)
+	# submerged? liquid slows you and makes you buoyant (swim with Jump)
+	var in_water: bool = Game.world.is_water_at(global_position)
+
+	# horizontal movement (Shift to sprint; water adds drag)
 	var spd := SPEED * (SPRINT_MULT if Input.is_action_pressed("sprint") else 1.0)
+	if in_water:
+		spd *= WATER_MOVE
 	var dir := Input.get_axis("move_left", "move_right")
 	if dir != 0.0:
 		velocity.x = move_toward(velocity.x, dir * spd, ACCEL * dt)
@@ -119,11 +129,17 @@ func _physics_process(dt: float) -> void:
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, FRICTION * dt)
 
-	# gravity + jump
-	if not is_on_floor():
-		velocity.y = minf(velocity.y + GRAVITY * dt, MAX_FALL)
-	if Input.is_action_pressed("jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
+	# gravity + jump (or buoyant swimming while submerged)
+	if in_water:
+		# gentle sink, capped fall; hold Jump to stroke upward
+		velocity.y = minf(velocity.y + GRAVITY * WATER_GRAVITY * dt, MAX_FALL * 0.32)
+		if Input.is_action_pressed("jump"):
+			velocity.y = move_toward(velocity.y, -SPEED * 0.8, ACCEL * dt)
+	else:
+		if not is_on_floor():
+			velocity.y = minf(velocity.y + GRAVITY * dt, MAX_FALL)
+		if Input.is_action_pressed("jump") and is_on_floor():
+			velocity.y = JUMP_VELOCITY
 
 	move_and_slide()
 	_update_anim()
@@ -157,15 +173,19 @@ func _handle_interaction(dt: float) -> void:
 	var mining := Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 
 	var sel := inv.selected_id()
+	var it := ItemDB.get_item(sel) if sel != "" else null
 	var t := ItemDB.type_of(sel) if sel != "" else -1
 
 	if primary:
-		match t:
-			ItemDB.TOOL: mining = true
-			ItemDB.BLOCK: _try_place(sel)
-			ItemDB.WEAPON: _try_fire(sel)
-			ItemDB.CONSUMABLE: _try_consume(sel)
-			ItemDB.DEPLOYABLE: _try_deploy(sel)
+		if it and it.stats.has("pour_water"):
+			_try_pour()
+		else:
+			match t:
+				ItemDB.TOOL: mining = true
+				ItemDB.BLOCK: _try_place(sel)
+				ItemDB.WEAPON: _try_fire(sel)
+				ItemDB.CONSUMABLE: _try_consume(sel)
+				ItemDB.DEPLOYABLE: _try_deploy(sel)
 
 	if not (mining and _try_mine(dt)):
 		_stop_mining()
@@ -235,6 +255,14 @@ func _try_mine(dt: float) -> bool:
 
 	var id: int = Game.world.get_tile(t)
 	if not Tiles.is_solid(id):
+		# no block here, but the particle gun can suck up any liquid in the cell
+		if Game.world.water_at(t) > 0.0:
+			Game.world.drain_water(t, DRAIN_RATE * dt * 60.0 * MINE_BASE * _mining_power())
+			var wc := Color(0.4, 0.85, 1.0)
+			_mine_dir = (Game.world.tile_to_world_center(t) - global_position).normalized()
+			_mining_now = true
+			fx.set_state(true, t, global_position + _mine_dir * 6.0, wc, wc, 0.4, false)
+			return true
 		return false
 	# only mine blocks exposed to open space, so you can't dig more than one
 	# block deep into solid terrain at a time
@@ -302,6 +330,19 @@ func _try_place(item_id: String) -> void:
 	Game.world.set_tile(t, tile)
 	inv.consume_selected(1)
 	_place_cd = PLACE_COOLDOWN
+
+func _try_pour() -> void:
+	# Hydro Cell: stream liquid into the targeted open cell (an endless source, so
+	# you can flood, irrigate or fill basins — the physics does the rest).
+	if _place_cd > 0.0:
+		return
+	var t := _target_tile()
+	if not _in_reach(t):
+		return
+	if Tiles.is_solid(Game.world.get_tile(t)):
+		return
+	Game.world.add_water(t, POUR_RATE)
+	_place_cd = 0.05
 
 func _try_deploy(item_id: String) -> void:
 	# place a station / storage pod on flat ground within reach

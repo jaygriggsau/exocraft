@@ -27,9 +27,9 @@ godot --path .
 | Action            | Key                              |
 | ----------------- | -------------------------------- |
 | Move              | `A` / `D` or `←` / `→`           |
-| Jump              | `Space` / `W` / `↑`              |
+| Jump / swim up    | `Space` / `W` / `↑`              |
 | Use selected item | **Left click**                   |
-| Mine (always)     | **Right click**                  |
+| Mine / drain water| **Right click**                  |
 | Select hotbar     | `1` – `0` or **mouse wheel**     |
 | Inventory + craft | `E` or `Tab`                     |
 | Peaceful mode     | `P` (toggle enemies on/off)      |
@@ -40,6 +40,7 @@ godot --path .
 "Use selected item" depends on what is in the active hotbar slot:
 
 - **Plasma Drill** (tool) – mine the tile under the cursor
+- **Hydro Cell** (tool) – pour liquid into the cell under the cursor
 - **Ion Blaster** (weapon) – fire an energy bolt toward the cursor
 - **Block** – place it under the cursor (needs an adjacent solid tile)
 - **Med-Cell** (consumable) – restore health
@@ -68,6 +69,17 @@ godot --path .
   support checks, and item drops that fall and magnetise to the player. You can
   only mine **exposed** blocks (one block deep at a time), so no reaching through
   solid rock.
+- **Physics-based liquid** (Terraria-style cellular-automaton water): each cell
+  holds a fill level that **flows down into open space and spreads sideways**
+  toward a flat surface, so it pools in basins, pours through gaps and cascades
+  down shafts, rendered as translucent cyan with a bright surface line. Still
+  pools cost nothing (settled cells drop out of the sim) and only liquid within
+  range of the player simulates. **Natural springs** seed pools in cave pockets.
+  Craft a **Hydro Cell** to pour liquid anywhere, and **drain it back** by aiming
+  the particle gun at a water cell. Placing a block in liquid **displaces** it
+  into neighbouring cells; mining a wall lets a pool flood through. The player
+  is **buoyant** while submerged — slowed and sinking gently, hold **Jump** to
+  swim upward.
 - **Particle-gun mining**: a beam from the gun dissolves the target block
   pixel-by-pixel as you mine, and the dissolved bits stream back into the gun as
   glowing particles, with a light at the impact point. The gun has a flickering

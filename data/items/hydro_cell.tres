@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_p6kwy"]
+
+[resource]
+script = ExtResource("1_p6kwy")
+id = "hydro_cell"
+display_name = "Hydro Cell"
+tier = 1
+category = "tool"
+stack_size = 1
+base_value = 14
+stats = {
+"pour_water": 1.0
+}
+color = Color(0.22745098, 0.627451, 1, 1)

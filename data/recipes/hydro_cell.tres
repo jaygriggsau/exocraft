@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_b1jgy"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="2_f53qe"]
+[ext_resource type="Resource" path="res://data/items/glass_pane.tres" id="3_bev8m"]
+[ext_resource type="Resource" path="res://data/items/hydro_cell.tres" id="4_wyxfl"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_ijhi3"]
+
+[sub_resource type="Resource" id="Resource_wlqm5"]
+script = ExtResource("1_b1jgy")
+item = ExtResource("2_f53qe")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_lhol0"]
+script = ExtResource("1_b1jgy")
+item = ExtResource("3_bev8m")
+
+[resource]
+script = ExtResource("5_ijhi3")
+output_item = ExtResource("4_wyxfl")
+inputs = Array[ExtResource("1_b1jgy")]([SubResource("Resource_wlqm5"), SubResource("Resource_lhol0")])
+station = "workbench"

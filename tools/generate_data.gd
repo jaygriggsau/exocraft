@@ -38,6 +38,7 @@ func _initialize() -> void:
 		["nanocore", "Nanocore", 3, "component", 999, 80, "eaffff", -1, 0.0, {}],
 		# --- gear / blocks / consumable ---
 		["pickaxe", "Particle Gun", 0, "tool", 1, 0, "2dffff", -1, 0.0, {"mining_power": 1.0}],
+		["hydro_cell", "Hydro Cell", 1, "tool", 1, 14, "3aa0ff", -1, 0.0, {"pour_water": 1.0}],
 		["blaster", "Ion Blaster", 2, "weapon", 1, 24, "ff2bd6", -1, 0.0, {"damage": 12.0, "cooldown": 0.22, "speed": 360.0}],
 		["med_cell", "Med-Cell", 2, "component", 20, 8, "39ff88", -1, 40.0, {}],
 		["plating", "Hull Plating", 2, "structure", 999, 12, "7a80b0", T.PLATING, 0.0, {}],
@@ -81,6 +82,7 @@ func _initialize() -> void:
 		["polymer", 1, [["wood", 2]], "workbench", ""],
 		["wood_block", 4, [["wood", 2]], "workbench", ""],
 		["storage_pod", 1, [["metal_ingot", 4], ["glass_pane", 2]], "workbench", ""],
+		["hydro_cell", 1, [["metal_ingot", 2], ["glass_pane", 1]], "workbench", ""],
 		["fabricator", 1, [["metal_ingot", 8], ["glass_pane", 2]], "workbench", "tier>=1"],
 		["power_cell", 1, [["energy_core", 1], ["scrap", 1]], "fabricator", ""],
 		["crystal_lens", 1, [["crystal", 1]], "fabricator", ""],

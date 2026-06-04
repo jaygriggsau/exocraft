@@ -23,6 +23,9 @@ var decor_source_id := 0
 var fog_tileset: TileSet
 var fog_source_id := 0
 const FOG_VARIANTS := 3
+var water_tileset: TileSet
+var water_source_id := 0
+const WATER_LEVELS := 8  ## fill-height steps for the liquid simulation render
 var _tree_cache := {}    # "biome_seed" -> ImageTexture (each tree is unique)
 
 # decor tile ids (atlas columns in the decor tileset)
@@ -39,6 +42,7 @@ func _ready() -> void:
 	_build_player_frames()
 	_build_decor_tileset()
 	_build_fog_tileset()
+	_build_water_tileset()
 	_build_creature_frames()
 
 # ---------------------------------------------------------------------------
@@ -776,6 +780,54 @@ func _build_fog_tileset() -> void:
 
 func fog_atlas_coords(v: int) -> Vector2i:
 	return Vector2i(v, 0)
+
+# ---------------------------------------------------------------------------
+# Liquid (translucent cyan coolant; rendered at WATER_LEVELS fill heights)
+# ---------------------------------------------------------------------------
+func _make_water_image(level: int) -> Image:
+	# level 1..WATER_LEVELS -> fills the bottom (level/WATER_LEVELS) of the tile
+	var img := _new_image(TS, TS)
+	var fill := int(round(float(level) / float(WATER_LEVELS) * TS))
+	fill = clampi(fill, 1, TS)
+	var top := TS - fill
+	var body := Color(0.16, 0.66, 0.95, 0.62)      # translucent sci-fi cyan
+	var deep := Color(0.10, 0.42, 0.80, 0.72)       # darker toward the bottom
+	var surface := Color(0.65, 0.98, 1.0, 0.85)     # bright top line
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5000 + level
+	for y in range(top, TS):
+		var f := float(y - top) / float(maxi(fill, 1))
+		var c := body.lerp(deep, f)
+		for x in TS:
+			# faint vertical shimmer so the body isn't flat
+			var s := 0.04 * sin(float(x) * 1.7 + float(level))
+			img.set_pixel(x, y, Color(clampf(c.r + s, 0, 1), clampf(c.g + s, 0, 1), c.b, c.a))
+	# bright surface line with a couple of lighter ripples
+	if top < TS:
+		for x in TS:
+			img.set_pixel(x, top, surface)
+		for _i in 3:
+			var rx := rng.randi_range(0, TS - 1)
+			img.set_pixel(rx, mini(top + 1, TS - 1), surface.lerp(body, 0.4))
+	return img
+
+func _build_water_tileset() -> void:
+	var atlas := _new_image(WATER_LEVELS * TS, TS)
+	for lvl in range(1, WATER_LEVELS + 1):
+		atlas.blit_rect(_make_water_image(lvl), Rect2i(0, 0, TS, TS), Vector2i((lvl - 1) * TS, 0))
+	var tex := ImageTexture.create_from_image(atlas)
+	var ts := TileSet.new()
+	ts.tile_size = Vector2i(TS, TS)
+	var src := TileSetAtlasSource.new()
+	src.texture = tex
+	src.texture_region_size = Vector2i(TS, TS)
+	water_source_id = ts.add_source(src, 0)   # no collision, no occluder (light passes through)
+	for lvl in range(WATER_LEVELS):
+		src.create_tile(Vector2i(lvl, 0))
+	water_tileset = ts
+
+func water_atlas_coords(level: int) -> Vector2i:
+	return Vector2i(clampi(level - 1, 0, WATER_LEVELS - 1), 0)
 
 # ---------------------------------------------------------------------------
 # Alien trees (one tall sprite per biome, base at the bottom centre)

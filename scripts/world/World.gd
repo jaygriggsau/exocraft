@@ -23,8 +23,20 @@ enum { TUNDRA, DUNES, WASTES, JUNGLE }
 
 var tilemap: TileMapLayer
 var decor_map: TileMapLayer         # non-solid surface decorations
+var water_map: TileMapLayer         # liquid render layer (cellular-automaton water)
 var fog_map: TileMapLayer           # fog of war over unexplored underground
 var _vision: Sprite2D               # soft radial veil that fades into the tile fog
+
+# --- liquid simulation ---
+const WATER_MAX := 1.0              # a cell is "full" at 1.0
+const WATER_MIN := 0.02            # below this a cell is treated as empty
+const WATER_FLOW := 0.5            # how fast cells equalise horizontally (0..1)
+const WATER_SIM_RADIUS := 56       # tiles around the player that actively simulate
+const WATER_TICK := 0.05           # seconds between simulation steps
+var _water := {}                    # Vector2i -> float fill (0..1); absent = dry
+var _water_active := {}             # Vector2i -> true (cells to simulate next step)
+var _watered_chunks := {}           # Vector2i -> true (natural water already seeded)
+var _water_accum := 0.0
 var _explored := {}                 # Vector2i tile -> true (revealed)
 var _mapped := {}                   # Vector2i tile -> true (revealed on the minimap)
 var _last_reveal := Vector2i(999999, 999999)
@@ -59,6 +71,11 @@ func _ready() -> void:
 	decor_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	decor_map.z_index = 1               # in front of terrain, behind the player
 	add_child(decor_map)
+	water_map = TileMapLayer.new()
+	water_map.tile_set = Art.water_tileset
+	water_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	water_map.z_index = 0               # over terrain, under the player (added next)
+	add_child(water_map)
 	fog_map = TileMapLayer.new()
 	fog_map.tile_set = Art.fog_tileset
 	fog_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -111,10 +128,11 @@ func chunk_of_tile(t: Vector2i) -> Vector2i:
 # ---------------------------------------------------------------------------
 # Streaming
 # ---------------------------------------------------------------------------
-func _physics_process(_dt: float) -> void:
+func _physics_process(dt: float) -> void:
 	if Game.player == null:
 		return
 	_update_vision()
+	_tick_water(dt)
 	var ptile := world_to_tile(Game.player.global_position)
 	if ptile != _last_reveal:
 		_last_reveal = ptile
@@ -136,6 +154,211 @@ func _update_vision() -> void:
 	var ptile := world_to_tile(p)
 	var depth := float(ptile.y - surface_height(ptile.x))
 	_vision.modulate.a = clampf((depth - 2.0) / 6.0, 0.0, 1.0)
+
+# ---------------------------------------------------------------------------
+# Liquid simulation (Terraria-style cellular-automaton water)
+#
+# Each cell holds a fill fraction 0..1. Every tick, active cells flow DOWN into
+# any open space below, then equalise sideways with open horizontal neighbours
+# toward their shared average (conservative + non-oscillating). Cells settle and
+# drop out of the active set, so a still pool costs nothing. Only cells within
+# WATER_SIM_RADIUS of the player simulate; the rest stay as frozen data.
+# ---------------------------------------------------------------------------
+func _tick_water(dt: float) -> void:
+	if _water_active.is_empty():
+		return
+	_water_accum += dt
+	if _water_accum < WATER_TICK:
+		return
+	_water_accum = 0.0
+	_sim_water_step()
+
+func water_at(t: Vector2i) -> float:
+	return _water.get(t, 0.0)
+
+## True if a tile is filled enough to swim/be submerged in.
+func is_water_at(p: Vector2) -> bool:
+	return _water.get(world_to_tile(p), 0.0) > 0.35
+
+func _water_solid(t: Vector2i) -> bool:
+	# water can't enter solid blocks (uses generated data, bounded by sim radius)
+	return Tiles.is_solid(get_tile(t))
+
+## Add liquid to a cell (used by the Hydro Cell tool and natural springs).
+func add_water(t: Vector2i, amount: float) -> void:
+	if _water_solid(t):
+		return
+	_water[t] = minf(WATER_MAX, _water.get(t, 0.0) + amount)
+	_wake_water(t)
+	_render_water_cell(t)
+	_render_water_cell(t + Vector2i(0, -1))
+
+## Remove liquid from a cell (the particle gun "drains" water). Returns removed.
+func drain_water(t: Vector2i, amount: float) -> float:
+	var have: float = _water.get(t, 0.0)
+	if have <= 0.0:
+		return 0.0
+	var taken := minf(have, amount)
+	var left := have - taken
+	if left <= WATER_MIN:
+		_water.erase(t)
+		left = 0.0
+	else:
+		_water[t] = left
+	# neighbours may now flow into the gap
+	_wake_water(t)
+	for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)]:
+		_wake_water(t + o)
+	_render_water_cell(t)
+	_render_water_cell(t + Vector2i(0, -1))
+	return taken
+
+func _wake_water(t: Vector2i) -> void:
+	if _water.get(t, 0.0) > 0.0:
+		_water_active[t] = true
+
+## A block was placed into a water cell: shove its liquid into open neighbours.
+func _displace_water(t: Vector2i) -> void:
+	var amt: float = _water.get(t, 0.0)
+	_water.erase(t)
+	water_map.erase_cell(t)
+	for o in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1)]:
+		if amt <= 0.0:
+			break
+		var n: Vector2i = t + o
+		if _water_solid(n):
+			continue
+		var space: float = WATER_MAX - _water.get(n, 0.0)
+		if space <= 0.0:
+			continue
+		var move := minf(amt, space)
+		_water[n] = _water.get(n, 0.0) + move
+		amt -= move
+		_wake_water(n)
+		_render_water_cell(n)
+
+func _sim_water_step() -> void:
+	var pc := world_to_tile(Game.player.global_position)
+	var cells: Array = _water_active.keys()
+	_water_active = {}
+	var changed := {}
+	for cell in cells:
+		var amt: float = _water.get(cell, 0.0)
+		if amt <= 0.0:
+			continue
+		# freeze (but keep) cells far from the player
+		if absi(cell.x - pc.x) > WATER_SIM_RADIUS or absi(cell.y - pc.y) > WATER_SIM_RADIUS:
+			_water_active[cell] = true
+			continue
+		var moved := false
+		# --- flow DOWN ---
+		var below := Vector2i(cell.x, cell.y + 1)
+		if not _water_solid(below):
+			var bw: float = _water.get(below, 0.0)
+			var space := WATER_MAX - bw
+			if space > 0.001:
+				var move := minf(amt, space)
+				amt -= move
+				_water[below] = bw + move
+				changed[below] = true
+				_water_active[below] = true
+				moved = true
+		# --- equalise SIDEWAYS toward the open-neighbour average ---
+		if amt > WATER_MIN:
+			var opens: Array = []
+			for dx in [-1, 1]:
+				var s := Vector2i(cell.x + dx, cell.y)
+				if not _water_solid(s):
+					opens.append(s)
+			if not opens.is_empty():
+				var total := amt
+				var imbalance := false
+				for s in opens:
+					var sw: float = _water.get(s, 0.0)
+					total += sw
+					if absf(sw - amt) > WATER_MIN:
+						imbalance = true
+				if imbalance:
+					var avg := total / float(opens.size() + 1)
+					amt += (avg - amt) * WATER_FLOW
+					for s in opens:
+						var sw2: float = _water.get(s, 0.0)
+						_water[s] = sw2 + (avg - sw2) * WATER_FLOW
+						changed[s] = true
+						_water_active[s] = true
+					moved = true
+		# write the cell back
+		if amt <= WATER_MIN:
+			if _water.has(cell):
+				_water.erase(cell)
+			changed[cell] = true
+		else:
+			_water[cell] = amt
+			changed[cell] = true
+			if moved:
+				_water_active[cell] = true
+	# repaint everything that changed (plus the cell above, whose surface may flip)
+	for c in changed:
+		_render_water_cell(c)
+		_render_water_cell(c + Vector2i(0, -1))
+
+func _render_water_cell(t: Vector2i) -> void:
+	# only draw water in currently loaded chunks
+	if not _loaded.has(chunk_of_tile(t)):
+		return
+	var amt: float = _water.get(t, 0.0)
+	if amt <= WATER_MIN:
+		water_map.erase_cell(t)
+		return
+	# a cell with water above it renders full so the surface line only shows on top
+	var lvl: int
+	if _water.get(Vector2i(t.x, t.y - 1), 0.0) > WATER_MIN:
+		lvl = Art.WATER_LEVELS
+	else:
+		lvl = clampi(int(ceil(amt * Art.WATER_LEVELS)), 1, Art.WATER_LEVELS)
+	water_map.set_cell(t, Art.water_source_id, Art.water_atlas_coords(lvl))
+
+func _render_water_chunk(cc: Vector2i) -> void:
+	var ox := cc.x * CHUNK
+	var oy := cc.y * CHUNK
+	for ly in CHUNK:
+		for lx in CHUNK:
+			var t := Vector2i(ox + lx, oy + ly)
+			if _water.get(t, 0.0) > WATER_MIN:
+				_render_water_cell(t)
+
+func _unrender_water_chunk(cc: Vector2i) -> void:
+	var ox := cc.x * CHUNK
+	var oy := cc.y * CHUNK
+	for ly in CHUNK:
+		for lx in CHUNK:
+			water_map.erase_cell(Vector2i(ox + lx, oy + ly))
+
+## Seed natural springs/pools the first time a chunk is shown: water collects in
+## cave pockets that have a solid floor, deeper down, gated by noise so it's rare.
+func _seed_water_chunk(cc: Vector2i) -> void:
+	if _watered_chunks.has(cc):
+		return
+	_watered_chunks[cc] = true
+	var data := _get_chunk(cc)
+	var ox := cc.x * CHUNK
+	var oy := cc.y * CHUNK
+	for lx in CHUNK:
+		var tx := ox + lx
+		var surf := surface_height(tx)
+		for ly in CHUNK:
+			var ty := oy + ly
+			if ty < surf + 6:
+				continue                         # leave the surface dry
+			if data[ly * CHUNK + lx] != Tiles.AIR:
+				continue                         # only fill cave air
+			# needs a solid floor so it actually pools instead of draining
+			if not Tiles.is_solid(get_tile(Vector2i(tx, ty + 1))):
+				continue
+			# aquifer noise: sparse pockets of liquid
+			if _ore_kind_noise.get_noise_2d(float(tx) * 0.6 + 1000.0, float(ty) * 0.6) > 0.5:
+				_water[Vector2i(tx, ty)] = WATER_MAX
+				_water_active[Vector2i(tx, ty)] = true
 
 func _reveal_around(c: Vector2i) -> void:
 	# clear the in-world fog within a circle of the player (underground only)
@@ -198,6 +421,8 @@ func _stream(center: Vector2i) -> void:
 			_render_chunk(cc)
 			_decorate_chunk(cc)
 			_fog_chunk(cc)
+			_seed_water_chunk(cc)
+			_render_water_chunk(cc)
 			_loaded[cc] = true
 	# unload chunks that drifted out of range (data is kept in `chunks`)
 	for cc in _loaded.keys():
@@ -205,6 +430,7 @@ func _stream(center: Vector2i) -> void:
 			_erase_chunk(cc)
 			_undecorate_chunk(cc)
 			_unfog_chunk(cc)
+			_unrender_water_chunk(cc)
 			_loaded.erase(cc)
 
 	# stream glowing-block lights for just the nearest chunks (perf)
@@ -503,9 +729,15 @@ func set_tile(t: Vector2i, id: int) -> int:
 		if id == Tiles.AIR:
 			tilemap.erase_cell(t)
 			_clear_decor(t + Vector2i(0, -1))   # destroy a decoration resting on the mined block
+			# liquid above/beside the newly opened cell can now flow into it
+			for o in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]:
+				_wake_water(t + o)
 		else:
 			tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id, _tile_variant(t.x, t.y)))
 			_clear_decor(t)                     # a placed block covers any decoration here
+			# a block placed in liquid displaces it; push it to neighbours
+			if _water.get(t, 0.0) > 0.0:
+				_displace_water(t)
 	# refresh block lights for this chunk if it is in the lit zone
 	if _chunk_lights.has(cc):
 		_free_chunk_lights(cc)
