@@ -72,7 +72,8 @@ godot --path .
 - **Physics-based liquid** (Terraria-style cellular-automaton water): each cell
   holds a fill level that **flows down into open space and spreads sideways**
   toward a flat surface, so it pools in basins, pours through gaps and cascades
-  down shafts, rendered as translucent cyan with a bright surface line. Still
+  down shafts, rendered as **transparent** cyan (drawn in front of the player so
+  you look submerged) with a bright surface line only along the top. Still
   pools cost nothing (settled cells drop out of the sim) and only liquid within
   range of the player simulates. **Natural springs** seed pools in cave pockets.
   Craft a **Hydro Cell** to pour liquid anywhere, and **drain it back** by aiming

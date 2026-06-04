@@ -74,7 +74,7 @@ func _ready() -> void:
 	water_map = TileMapLayer.new()
 	water_map.tile_set = Art.water_tileset
 	water_map.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	water_map.z_index = 0               # over terrain, under the player (added next)
+	water_map.z_index = 1               # in front of the player, so you look submerged
 	add_child(water_map)
 	fog_map = TileMapLayer.new()
 	fog_map.tile_set = Art.fog_tileset
@@ -310,12 +310,14 @@ func _render_water_cell(t: Vector2i) -> void:
 	if amt <= WATER_MIN:
 		water_map.erase_cell(t)
 		return
-	# a cell with water above it renders full so the surface line only shows on top
+	# Cells with water above are interior body water -> full, line-free tile.
+	# Surface cells (dry above) use a partial tile (1..LEVELS-1) so they show the
+	# bright surface line at their fill height.
 	var lvl: int
 	if _water.get(Vector2i(t.x, t.y - 1), 0.0) > WATER_MIN:
 		lvl = Art.WATER_LEVELS
 	else:
-		lvl = clampi(int(ceil(amt * Art.WATER_LEVELS)), 1, Art.WATER_LEVELS)
+		lvl = clampi(int(ceil(amt * (Art.WATER_LEVELS - 1))), 1, Art.WATER_LEVELS - 1)
 	water_map.set_cell(t, Art.water_source_id, Art.water_atlas_coords(lvl))
 
 func _render_water_chunk(cc: Vector2i) -> void:

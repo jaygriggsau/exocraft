@@ -790,9 +790,9 @@ func _make_water_image(level: int) -> Image:
 	var fill := int(round(float(level) / float(WATER_LEVELS) * TS))
 	fill = clampi(fill, 1, TS)
 	var top := TS - fill
-	var body := Color(0.16, 0.66, 0.95, 0.62)      # translucent sci-fi cyan
-	var deep := Color(0.10, 0.42, 0.80, 0.72)       # darker toward the bottom
-	var surface := Color(0.65, 0.98, 1.0, 0.85)     # bright top line
+	var body := Color(0.20, 0.70, 0.98, 0.38)      # translucent sci-fi cyan
+	var deep := Color(0.12, 0.48, 0.85, 0.48)       # darker toward the bottom
+	var surface := Color(0.70, 0.99, 1.0, 0.60)     # bright top line
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5000 + level
 	for y in range(top, TS):
@@ -802,8 +802,10 @@ func _make_water_image(level: int) -> Image:
 			# faint vertical shimmer so the body isn't flat
 			var s := 0.04 * sin(float(x) * 1.7 + float(level))
 			img.set_pixel(x, y, Color(clampf(c.r + s, 0, 1), clampf(c.g + s, 0, 1), c.b, c.a))
-	# bright surface line with a couple of lighter ripples
-	if top < TS:
+	# bright surface line + a couple of ripples — only on partial tiles, which
+	# are used exclusively for the top of a pool. Full tiles are interior body
+	# water and stay line-free so deep pools don't show horizontal banding.
+	if level < WATER_LEVELS and top < TS:
 		for x in TS:
 			img.set_pixel(x, top, surface)
 		for _i in 3:
