@@ -6,7 +6,7 @@ extends Node
 ## of these out for hand-drawn PNGs later without touching gameplay code.
 
 const TS := 16  ## tile size in pixels
-const TILE_VARIANTS := 4  ## per-tile texture variants so terrain isn't uniform
+const TILE_VARIANTS := 6  ## per-tile texture variants so terrain isn't uniform
 
 var tileset: TileSet
 var atlas_source_id := 0
@@ -98,19 +98,40 @@ func _make_tile_image(id: int, variant: int) -> Image:
 				if rng.randf() < 0.25:
 					img.set_pixel(x, h, top.lightened(0.1))
 		"ore":
-			# Stone base with clustered glowing mineral veins.
+			# Stone matrix with clearly visible embedded mineral crystals, so the
+			# ore content reads at a glance. Each crystal is a faceted diamond of
+			# the ore colour with a bright highlight (extra bright if it glows).
 			var ore: Color = d.ore
-			var clusters := 3 + (rng.randi() % 3)
+			var glow: bool = d.get("glow", false)
+			# darken the stone a touch so the ore pops against it
+			for y in TS:
+				for x in TS:
+					if x + y > TS + 6:
+						img.set_pixel(x, y, _vary(base.darkened(0.14), rng, 0.04))
+			var clusters := 2 + (rng.randi() % 2)        # 2-3 distinct crystals
 			for c in clusters:
-				var cx := rng.randi_range(2, TS - 3)
-				var cy := rng.randi_range(2, TS - 3)
-				var n := 2 + (rng.randi() % 4)
-				for i in n:
-					var px := clampi(cx + rng.randi_range(-1, 1), 0, TS - 1)
-					var py := clampi(cy + rng.randi_range(-1, 1), 0, TS - 1)
-					img.set_pixel(px, py, _vary(ore, rng, 0.06))
-				if d.get("glow", false):
-					img.set_pixel(cx, cy, ore.lightened(0.35))
+				var cx := rng.randi_range(3, TS - 4)
+				var cy := rng.randi_range(3, TS - 4)
+				var r := 1 + (rng.randi() % 2)           # crystal radius
+				for dy in range(-r - 1, r + 2):
+					for dx in range(-r - 1, r + 2):
+						var m := absi(dx) + absi(dy)
+						if m > r + 1:
+							continue
+						var px := clampi(cx + dx, 0, TS - 1)
+						var py := clampi(cy + dy, 0, TS - 1)
+						if m > r:
+							img.set_pixel(px, py, ore.darkened(0.28))   # rim/shadow
+						else:
+							img.set_pixel(px, py, _vary(ore, rng, 0.08))
+				# bright facet on the upper-left, brightest core if it glows
+				img.set_pixel(cx, cy, ore.lightened(0.55 if glow else 0.32))
+				img.set_pixel(clampi(cx - 1, 0, TS - 1), clampi(cy - 1, 0, TS - 1),
+					ore.lightened(0.35 if glow else 0.18))
+			# a few scattered flecks so the seam between crystals isn't bare stone
+			for f in 3 + (rng.randi() % 3):
+				img.set_pixel(rng.randi_range(1, TS - 2), rng.randi_range(1, TS - 2),
+					_vary(ore, rng, 0.1))
 		"plating":
 			# Metallic panel with bevelled edge + rivets.
 			var ac: Color = d.accent
@@ -132,23 +153,40 @@ func _make_tile_image(id: int, variant: int) -> Image:
 			_rect(img, TS - 1, 0, 1, TS, nc)
 			img.set_pixel(TS / 2, TS / 2, nc.lightened(0.3))
 		_:
-			# "block" / "soil": subtle depth shade, plus per-variant pebbles and
-			# cracks so neighbouring blocks of the same type don't look identical.
+			# "block" / "soil": subtle depth shade, plus per-variant pebbles,
+			# cracks, mottling and an occasional embedded fleck so neighbouring
+			# blocks of the same type don't look identical.
+			# Vary the shade gradient direction per variant for extra diversity.
+			var dir := rng.randi() % 3
 			for y in TS:
 				for x in TS:
-					if x + y > TS + 6:
+					var lit := false
+					match dir:
+						0: lit = x + y > TS + 6           # bottom-right shadow
+						1: lit = x - y > 4                # diagonal the other way
+						_: lit = y > TS - 5               # darker base band
+					if lit:
 						img.set_pixel(x, y, _vary(base.darkened(0.12), rng, 0.04))
-			for f in 2 + rng.randi() % 3:
+			# soft mottled patches
+			for _m in 1 + rng.randi() % 2:
+				var mx := rng.randi_range(2, TS - 4)
+				var my := rng.randi_range(2, TS - 4)
+				var mc := base.lightened(0.08) if rng.randf() < 0.5 else base.darkened(0.14)
+				for oy in 3:
+					for ox in 3:
+						if rng.randf() < 0.6:
+							img.set_pixel(clampi(mx + ox, 0, TS - 1), clampi(my + oy, 0, TS - 1), _vary(mc, rng, 0.05))
+			for f in 3 + rng.randi() % 3:
 				var px := rng.randi_range(2, TS - 3)
 				var py := rng.randi_range(2, TS - 3)
-				var pc := base.lightened(0.18) if rng.randf() < 0.5 else base.darkened(0.24)
+				var pc := base.lightened(0.2) if rng.randf() < 0.5 else base.darkened(0.26)
 				img.set_pixel(px, py, pc)
 				img.set_pixel(px + 1, py, pc)
 				img.set_pixel(px, py + 1, _vary(pc, rng, 0.05))
-			if rng.randf() < 0.5:
+			if rng.randf() < 0.55:
 				var cx := rng.randi_range(3, TS - 4)
 				var cy := rng.randi_range(2, TS - 6)
-				var cl := base.darkened(0.32)
+				var cl := base.darkened(0.34)
 				for k in 2 + rng.randi() % 3:
 					img.set_pixel(clampi(cx + rng.randi_range(-1, 1), 0, TS - 1), clampi(cy + k, 0, TS - 1), cl)
 	return img

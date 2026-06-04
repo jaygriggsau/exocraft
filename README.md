@@ -58,8 +58,12 @@ godot --path .
   decorations** (biome grass tufts,
   rocks, flowers, mushrooms) the player walks straight through. Harvested trees
   stay gone; everything else regenerates with the chunk.
-- **Ores**: Ferralite (metal), Vyrite (crystal) and Ion ore (energy, glowing),
-  gated by depth and rarity.
+- **Ores**: Ferralite (metal), Vyrite (crystal), Ion ore (energy, glowing) and
+  deep Exotic veins — each embedded as **visible faceted crystals** in the stone
+  so you can spot a vein at a glance, and dropped **only** by its own ore block.
+  Ore **improves with depth** (Ferralite near the surface → Vyrite → Ion →
+  Exotic in the depths) but also grows **rarer** the deeper you dig, so deep
+  mining is higher-risk, higher-reward.
 - **Mining & building** with reach limits, hardness-based dig times, placement
   support checks, and item drops that fall and magnetise to the player. You can
   only mine **exposed** blocks (one block deep at a time), so no reaching through

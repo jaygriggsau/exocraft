@@ -45,9 +45,8 @@ const STORAGE_RANGE := 112.0        # px: how close a pod feeds a station
 var _height_noise := FastNoiseLite.new()
 var _biome_noise := FastNoiseLite.new()
 var _cave_noise := FastNoiseLite.new()
-var _metal_noise := FastNoiseLite.new()
-var _crystal_noise := FastNoiseLite.new()
-var _energy_noise := FastNoiseLite.new()
+var _ore_noise := FastNoiseLite.new()       # where ore appears at all
+var _ore_kind_noise := FastNoiseLite.new()  # wobbles the depth->quality bands
 
 func _ready() -> void:
 	_setup_noise()
@@ -81,7 +80,7 @@ func _ready() -> void:
 
 func _setup_noise() -> void:
 	var s := Game.world_seed
-	for n in [_height_noise, _biome_noise, _cave_noise, _metal_noise, _crystal_noise, _energy_noise]:
+	for n in [_height_noise, _biome_noise, _cave_noise, _ore_noise, _ore_kind_noise]:
 		n.noise_type = FastNoiseLite.TYPE_PERLIN
 	_height_noise.seed = s
 	_height_noise.frequency = 0.018
@@ -89,12 +88,10 @@ func _setup_noise() -> void:
 	_biome_noise.frequency = 0.004
 	_cave_noise.seed = s + 31
 	_cave_noise.frequency = 0.07
-	_metal_noise.seed = s + 53
-	_metal_noise.frequency = 0.12
-	_crystal_noise.seed = s + 71
-	_crystal_noise.frequency = 0.13
-	_energy_noise.seed = s + 97
-	_energy_noise.frequency = 0.14
+	_ore_noise.seed = s + 53
+	_ore_noise.frequency = 0.12
+	_ore_kind_noise.seed = s + 71
+	_ore_kind_noise.frequency = 0.05
 
 # ---------------------------------------------------------------------------
 # Coordinate helpers
@@ -576,16 +573,31 @@ func _gen_tile(tx: int, ty: int, surf: int, biome: int) -> int:
 		return Tiles.AIR                     # caves
 
 	var stone := Tiles.DARKROCK if ty > DEEP_Y else Tiles.STONE
-	# ores, deepest/rarest first
-	if ty > 150 and _energy_noise.get_noise_2d(float(tx) + 7000.0, float(ty)) > 0.82:
+	var ore := _ore_at(tx, ty)
+	return ore if ore != Tiles.AIR else stone
+
+## Decide which ore (if any) is embedded in the stone at this tile.
+## Ore gets *better* the deeper you go (Ferralite → Vyrite → Ion → Exotic) but
+## also *rarer* — the presence threshold climbs with depth, so deep veins are
+## sparser even though what you find there is worth more.
+func _ore_at(tx: int, ty: int) -> int:
+	if ty <= 4:
+		return Tiles.AIR                     # no ore right under the surface
+	var depth := float(ty)
+	# rarity: ~9% of stone near the top can hold ore, thinning toward ~2% deep
+	# (the noise tops out near 0.6, so these thresholds stay within its range)
+	var presence := lerpf(0.25, 0.38, clampf((depth - 4.0) / 360.0, 0.0, 1.0))
+	if _ore_noise.get_noise_2d(float(tx), float(ty)) < presence:
+		return Tiles.AIR
+	# quality by depth, with a noisy wobble so the bands aren't flat cut-offs
+	var d := depth + _ore_kind_noise.get_noise_2d(float(tx), float(ty)) * 22.0
+	if d > 170.0:
 		return Tiles.EXOTIC                  # tier-3, only very deep
-	if ty > 60 and _energy_noise.get_noise_2d(float(tx), float(ty)) > 0.8:
-		return Tiles.ENERGY
-	if ty > 20 and _crystal_noise.get_noise_2d(float(tx), float(ty)) > 0.78:
-		return Tiles.CRYSTAL
-	if ty > 4 and _metal_noise.get_noise_2d(float(tx), float(ty)) > 0.72:
-		return Tiles.METAL
-	return stone
+	if d > 75.0:
+		return Tiles.ENERGY                  # tier-2
+	if d > 28.0:
+		return Tiles.CRYSTAL                 # tier-1
+	return Tiles.METAL                       # tier-0, shallow
 
 ## Scan downward to find the first solid surface tile-y at column tx (for spawns).
 func surface_tile_y(tx: int) -> int:
