@@ -25,7 +25,6 @@ var tilemap: TileMapLayer
 var decor_map: TileMapLayer         # non-solid surface decorations
 var water_map: TileMapLayer         # liquid render layer (cellular-automaton water)
 var fog_map: TileMapLayer           # fog of war over unexplored underground
-var _vision: Sprite2D               # soft radial veil that fades into the tile fog
 
 # --- liquid simulation ---
 const WATER_MAX := 1.0              # a cell is "full" at 1.0
@@ -82,18 +81,6 @@ func _ready() -> void:
 	fog_map.z_index = 3                 # clouds terrain + creatures until explored
 	fog_map.light_mask = 0              # lights never reveal the fog; it stays black
 	add_child(fog_map)
-	_vision = Sprite2D.new()
-	_vision.texture = Art.vision_texture()
-	_vision.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR  # smooth the gradient
-	_vision.z_index = 2                 # over terrain/decor, under the tile fog (z3)
-	_vision.light_mask = 0
-	# Scale so the veil's fully-black rim lands just past REVEAL_RADIUS, where the
-	# hard-edged tile fog begins — the gradient then hides that boundary.
-	var vtex := Art.vision_texture()
-	var vrim := float((REVEAL_RADIUS) * TILE + TILE / 2)   # ~9.5 tiles
-	_vision.scale = Vector2.ONE * (vrim / (vtex.get_width() / 2.0))
-	_vision.modulate.a = 0.0
-	add_child(_vision)
 
 func _setup_noise() -> void:
 	var s := Game.world_seed
@@ -131,7 +118,6 @@ func chunk_of_tile(t: Vector2i) -> Vector2i:
 func _physics_process(dt: float) -> void:
 	if Game.player == null:
 		return
-	_update_vision()
 	_tick_water(dt)
 	var ptile := world_to_tile(Game.player.global_position)
 	if ptile != _last_reveal:
@@ -145,15 +131,6 @@ func _physics_process(dt: float) -> void:
 
 const REVEAL_RADIUS := 3        ## in-world black-fog vision radius (kept tighter than the view)
 const MAP_RADIUS := 26          ## how far the minimap reveals around the player
-
-func _update_vision() -> void:
-	# Follow the player and fade the radial veil in by depth, so the surface stays
-	# fully clear and the underground gradually darkens into the solid tile fog.
-	var p: Vector2 = Game.player.global_position
-	_vision.global_position = p
-	var ptile := world_to_tile(p)
-	var depth := float(ptile.y - surface_height(ptile.x))
-	_vision.modulate.a = clampf((depth - 2.0) / 6.0, 0.0, 1.0)
 
 # ---------------------------------------------------------------------------
 # Liquid simulation (Terraria-style cellular-automaton water)
