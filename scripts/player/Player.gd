@@ -131,10 +131,14 @@ func _physics_process(dt: float) -> void:
 
 	# gravity + jump (or buoyant swimming while submerged)
 	if in_water:
-		# gentle sink, capped fall; hold Jump to stroke upward
+		# gentle sink, capped fall; Jump kicks off the floor to leap out of
+		# shallow pools, or strokes upward while you're actually swimming
 		velocity.y = minf(velocity.y + GRAVITY * WATER_GRAVITY * dt, MAX_FALL * 0.32)
 		if Input.is_action_pressed("jump"):
-			velocity.y = move_toward(velocity.y, -SPEED * 0.8, ACCEL * dt)
+			if is_on_floor():
+				velocity.y = JUMP_VELOCITY
+			elif velocity.y > -SPEED * 0.95:   # don't brake an in-progress leap
+				velocity.y = move_toward(velocity.y, -SPEED * 0.95, ACCEL * dt)
 	else:
 		if not is_on_floor():
 			velocity.y = minf(velocity.y + GRAVITY * dt, MAX_FALL)
