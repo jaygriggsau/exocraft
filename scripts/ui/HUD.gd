@@ -8,6 +8,7 @@ const PAD := 6
 
 var _normal_sb: StyleBoxFlat
 var _select_sb: StyleBoxFlat
+var _panel_tex: ImageTexture       # generated cyberpunk panel background
 
 var _root: Control
 var _hp_fill: ColorRect
@@ -95,6 +96,7 @@ func _ready() -> void:
 	_root = Control.new()
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # crisp neon panel art
 	add_child(_root)
 	_root.resized.connect(_layout)
 
@@ -296,10 +298,66 @@ func _build_theme() -> Theme:
 	th.set_color("font_color", "Label", fg)
 	return th
 
-func _panel_sb() -> StyleBoxFlat:
-	var s := _sb(Color(0.03, 0.05, 0.11, 0.94), Color("2dffff"), 2)
-	s.border_color = Color(0.16, 0.7, 0.85, 0.9)
+## Menu-panel background: a dark cyberpunk plate (faint neon grid) framed by a
+## glowing neon border with magenta corner brackets — a 9-slice StyleBoxTexture
+## so the frame stays crisp and the grid tiles cleanly at any panel size.
+func _panel_sb() -> StyleBox:
+	if _panel_tex == null:
+		_panel_tex = _make_panel_texture()
+	var s := StyleBoxTexture.new()
+	s.texture = _panel_tex
+	s.set_texture_margin_all(16)
+	s.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	s.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	s.content_margin_left = 14
+	s.content_margin_right = 14
+	s.content_margin_top = 12
+	s.content_margin_bottom = 12
 	return s
+
+func _make_panel_texture() -> ImageTexture:
+	var S := 64
+	var img := Image.create_empty(S, S, false, Image.FORMAT_RGBA8)
+	var base := Color(0.04, 0.055, 0.12, 0.97)   # near-opaque dark plate (readable)
+	img.fill(base)
+	# faint neon grid (16px cells -> tiles seamlessly inside the 9-slice centre)
+	var grid := Color(0.25, 0.95, 1.0)
+	for gx in range(0, S, 16):
+		for y in S:
+			img.set_pixel(gx, y, base.lerp(grid, 0.07))
+	for gy in range(0, S, 16):
+		for x in S:
+			img.set_pixel(x, gy, base.lerp(grid, 0.07))
+	for gx in range(0, S, 16):
+		for gy in range(0, S, 16):
+			img.set_pixel(gx, gy, base.lerp(grid, 0.20))   # brighter nodes
+	# glowing neon border: bright core fading inward
+	_frame(img, 0, Color(0.78, 1.0, 1.0, 1.0))
+	_frame(img, 1, Color(0.20, 0.85, 0.95, 0.85))
+	_frame(img, 2, Color(0.10, 0.45, 0.6, 0.45))
+	# magenta corner brackets (stay crisp in the fixed 9-slice corners)
+	_corner_brackets(img, Color(1.0, 0.22, 0.85, 1.0))
+	return ImageTexture.create_from_image(img)
+
+func _frame(img: Image, d: int, col: Color) -> void:
+	var S := img.get_width()
+	for x in range(d, S - d):
+		img.set_pixel(x, d, col)
+		img.set_pixel(x, S - 1 - d, col)
+	for y in range(d, S - d):
+		img.set_pixel(d, y, col)
+		img.set_pixel(S - 1 - d, y, col)
+
+func _corner_brackets(img: Image, col: Color) -> void:
+	var S := img.get_width()
+	var ins := 4
+	var ln := 6
+	for i in ln:
+		# top-left, top-right, bottom-left, bottom-right L-shapes
+		img.set_pixel(ins + i, ins, col);             img.set_pixel(ins, ins + i, col)
+		img.set_pixel(S - 1 - ins - i, ins, col);     img.set_pixel(S - 1 - ins, ins + i, col)
+		img.set_pixel(ins + i, S - 1 - ins, col);     img.set_pixel(ins, S - 1 - ins - i, col)
+		img.set_pixel(S - 1 - ins - i, S - 1 - ins, col); img.set_pixel(S - 1 - ins, S - 1 - ins - i, col)
 
 func _build_minimap() -> void:
 	_mm_img = Image.create_empty(MM_W, MM_H, false, Image.FORMAT_RGBA8)
