@@ -6,8 +6,10 @@ extends Node
 ##   KIN  - the underground alien race: spawned in cave pockets near the player
 ##          while they're below ground, up to a cap. Neutral (see Creature).
 
-# --- Corp surface bases ---
-const CORP_SPACING := 84            # tiles between candidate base sites
+# --- Corp surface bases (rare: a base averages one every CORP_SPACING*CORP_RARITY
+# tiles, i.e. ~1440 tiles / ~23k px apart) ---
+const CORP_SPACING := 240          # tiles per candidate cell
+const CORP_RARITY := 6             # only ~1 in CORP_RARITY cells actually hosts a base
 const CORP_VIEW := 70              # tiles: materialise a base within this of the player
 const CORP_PATROL := 150.0         # px patrol radius for a base's garrison
 
@@ -30,11 +32,17 @@ func _process(dt: float) -> void:
 # Corp bases
 # ---------------------------------------------------------------------------
 func _site_tx(site: int) -> int:
-	# deterministic, slightly jittered x for each base site
+	# deterministic, jittered x for each base site (jitter is small vs. the cell)
 	var h: int = (site * 2654435761) ^ (Game.world_seed * 40503)
 	h = (h ^ (h >> 13)) * 1274126177
-	var jitter := (absi(h) % 31) - 15
+	var jitter := (absi(h) % 61) - 30
 	return site * CORP_SPACING + jitter
+
+func _has_base(site: int) -> bool:
+	# most candidate cells are empty, so bases are rare to stumble across
+	var h: int = (site * 374761393) ^ (Game.world_seed * 668265263)
+	h = (h ^ (h >> 13)) * 1274126177
+	return absi(h) % CORP_RARITY == 0
 
 func _update_corp(_dt: float) -> void:
 	var w = Game.world
@@ -42,6 +50,8 @@ func _update_corp(_dt: float) -> void:
 	var center := int(round(float(ptx) / float(CORP_SPACING)))
 	var want := {}
 	for s in range(center - 1, center + 2):
+		if not _has_base(s):
+			continue
 		var tx := _site_tx(s)
 		if absi(tx - ptx) <= CORP_VIEW:
 			want[s] = true
