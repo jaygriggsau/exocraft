@@ -93,7 +93,7 @@ func _setup_noise() -> void:
 	_height_noise.seed = s
 	_height_noise.frequency = 0.018
 	_biome_noise.seed = s + 17
-	_biome_noise.frequency = 0.004
+	_biome_noise.frequency = 0.0004    # very low -> sprawling, continent-sized biomes
 	_cave_noise.seed = s + 31
 	_cave_noise.frequency = 0.07
 	_cavern_noise.seed = s + 131
