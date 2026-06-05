@@ -14,7 +14,9 @@ const GRAVITY := 760.0
 const MAX_FALL := 520.0
 const REACH := 5.5                 # tiles
 const MINE_BASE := 0.12            # base unit for tree-harvest / dismantle / drain
-const MINE_BLOCK_BASE := 0.35      # seconds to absorb a hardness-1 block (scaled by hardness)
+const MINE_BLOCK_BASE := 0.75      # seconds per hardness point with the Particle Gun
+                                   # (hardest block, Exotic hardness 8 -> 6.0s; upgraded
+                                   # guns divide by mining_power so they all scale down)
 const PLACE_COOLDOWN := 0.12
 const INVULN := 0.6
 const FIRE_KICK := 3.5             # blaster recoil impulse (px)
