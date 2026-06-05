@@ -13,7 +13,8 @@ const JUMP_VELOCITY := -270.0
 const GRAVITY := 760.0
 const MAX_FALL := 520.0
 const REACH := 5.5                 # tiles
-const MINE_BASE := 0.12            # seconds per mine, scaled by tile hardness
+const MINE_BASE := 0.12            # base unit for tree-harvest / dismantle / drain
+const MINE_BLOCK_BASE := 0.35      # seconds to absorb a hardness-1 block (scaled by hardness)
 const PLACE_COOLDOWN := 0.12
 const INVULN := 0.6
 const FIRE_KICK := 3.5             # blaster recoil impulse (px)
@@ -277,7 +278,8 @@ func _try_mine(dt: float) -> bool:
 		_mine_progress = 0.0
 	_mine_progress += dt
 
-	var dur: float = MINE_BASE * Tiles.hardness(id) / _mining_power()
+	# tougher blocks take proportionally longer to absorb (see Tiles hardness)
+	var dur: float = MINE_BLOCK_BASE * Tiles.hardness(id) / _mining_power()
 	var frac := clampf(_mine_progress / dur, 0.0, 1.0)
 	var d = Tiles.def(id)
 	# gun muzzle just in front of the player, pointed at the block

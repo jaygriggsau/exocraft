@@ -31,22 +31,24 @@ const EXOTIC := 14    # deep exotic-matter ore (tier 3)
 ##   top    : (grass style) colour of the top band
 ##   ore    : (ore style) colour of the mineral specks
 ##   glow   : whether the tile emits a faint glow (cosmetic)
-##   hardness : relative time to mine
+##   hardness : relative time to absorb — stronger materials take longer to mine
+##              (a hardness-1 block ~= 0.35s with the basic Particle Gun; ranges
+##              from soft sand ~0.5 up to the deep Exotic vein ~8.0)
 var DEFS := {
-	DIRT:    {"name": "Regolith",     "item": "dirt",        "style": "soil",    "base": Color("3b2f4a"), "accent": Color("564470"), "glow": false, "hardness": 1.0},
-	STONE:   {"name": "Slate",        "item": "stone",       "style": "block",   "base": Color("2e2f3e"), "accent": Color("43465e"), "glow": false, "hardness": 1.5},
-	GRASS:   {"name": "Bio-Turf",     "item": "dirt",        "style": "grass",   "base": Color("3b2f4a"), "accent": Color("564470"), "top": Color("2bf0a0"), "glow": false, "hardness": 1.0},
+	DIRT:    {"name": "Regolith",     "item": "dirt",        "style": "soil",    "base": Color("3b2f4a"), "accent": Color("564470"), "glow": false, "hardness": 0.7},
+	STONE:   {"name": "Slate",        "item": "stone",       "style": "block",   "base": Color("2e2f3e"), "accent": Color("43465e"), "glow": false, "hardness": 1.8},
+	GRASS:   {"name": "Bio-Turf",     "item": "dirt",        "style": "grass",   "base": Color("3b2f4a"), "accent": Color("564470"), "top": Color("2bf0a0"), "glow": false, "hardness": 0.7},
 	ICE:     {"name": "Cryo-Ice",     "item": "ice",         "style": "block",   "base": Color("8fd6ef"), "accent": Color("d6f4ff"), "glow": false, "hardness": 1.2},
-	JUNGLE:  {"name": "Spore-Turf",   "item": "biomass",     "style": "grass",   "base": Color("33402a"), "accent": Color("48562f"), "top": Color("a6ff3a"), "glow": false, "hardness": 1.0},
-	SAND:    {"name": "Glass-Sand",   "item": "sand",        "style": "block",   "base": Color("d9c27a"), "accent": Color("efe0a8"), "glow": false, "hardness": 0.8},
-	CRYSTAL: {"name": "Vyrite Ore",   "item": "crystal",     "style": "ore",     "base": Color("2e2f3e"), "accent": Color("43465e"), "ore": Color("ff4df0"), "glow": true,  "light": Color("ff4df0"), "light_energy": 0.9, "hardness": 2.5},
-	METAL:   {"name": "Ferralite",    "item": "metal_ore",   "style": "ore",     "base": Color("2e2f3e"), "accent": Color("43465e"), "ore": Color("c4c4d6"), "glow": false, "hardness": 2.0},
-	ENERGY:  {"name": "Ion Ore",      "item": "energy_core", "style": "ore",     "base": Color("2e2f3e"), "accent": Color("43465e"), "ore": Color("2dffff"), "glow": true,  "light": Color("2dffff"), "light_energy": 1.3, "hardness": 3.0},
-	PLATING: {"name": "Hull Plating", "item": "plating",     "style": "plating", "base": Color("4a4e6b"), "accent": Color("7a80b0"), "glow": false, "hardness": 2.0},
-	NEON:    {"name": "Neon Glass",   "item": "neon_glass",  "style": "neon",    "base": Color("10131f"), "accent": Color("ff2bd6"), "glow": true,  "light": Color("ff2bd6"), "light_energy": 1.1, "hardness": 1.0},
-	DARKROCK:{"name": "Obsidite",     "item": "darkrock",    "style": "block",   "base": Color("1a1320"), "accent": Color("2e2138"), "glow": false, "hardness": 4.0},
-	WOOD:    {"name": "Bio-Timber",   "item": "wood",        "style": "plating", "base": Color("584438"), "accent": Color("7c6b4e"), "glow": false, "hardness": 1.5},
-	EXOTIC:  {"name": "Exotic Vein",  "item": "exotic_matter","style": "ore",    "base": Color("1a1320"), "accent": Color("2e2138"), "ore": Color("b06aff"), "glow": true, "light": Color("b06aff"), "light_energy": 1.2, "hardness": 5.0},
+	JUNGLE:  {"name": "Spore-Turf",   "item": "biomass",     "style": "grass",   "base": Color("33402a"), "accent": Color("48562f"), "top": Color("a6ff3a"), "glow": false, "hardness": 0.7},
+	SAND:    {"name": "Glass-Sand",   "item": "sand",        "style": "block",   "base": Color("d9c27a"), "accent": Color("efe0a8"), "glow": false, "hardness": 0.5},
+	CRYSTAL: {"name": "Vyrite Ore",   "item": "crystal",     "style": "ore",     "base": Color("2e2f3e"), "accent": Color("43465e"), "ore": Color("ff4df0"), "glow": true,  "light": Color("ff4df0"), "light_energy": 0.9, "hardness": 3.2},
+	METAL:   {"name": "Ferralite",    "item": "metal_ore",   "style": "ore",     "base": Color("2e2f3e"), "accent": Color("43465e"), "ore": Color("c4c4d6"), "glow": false, "hardness": 2.6},
+	ENERGY:  {"name": "Ion Ore",      "item": "energy_core", "style": "ore",     "base": Color("2e2f3e"), "accent": Color("43465e"), "ore": Color("2dffff"), "glow": true,  "light": Color("2dffff"), "light_energy": 1.3, "hardness": 4.2},
+	PLATING: {"name": "Hull Plating", "item": "plating",     "style": "plating", "base": Color("4a4e6b"), "accent": Color("7a80b0"), "glow": false, "hardness": 3.8},
+	NEON:    {"name": "Neon Glass",   "item": "neon_glass",  "style": "neon",    "base": Color("10131f"), "accent": Color("ff2bd6"), "glow": true,  "light": Color("ff2bd6"), "light_energy": 1.1, "hardness": 0.9},
+	DARKROCK:{"name": "Obsidite",     "item": "darkrock",    "style": "block",   "base": Color("1a1320"), "accent": Color("2e2138"), "glow": false, "hardness": 5.5},
+	WOOD:    {"name": "Bio-Timber",   "item": "wood",        "style": "plating", "base": Color("584438"), "accent": Color("7c6b4e"), "glow": false, "hardness": 1.4},
+	EXOTIC:  {"name": "Exotic Vein",  "item": "exotic_matter","style": "ore",    "base": Color("1a1320"), "accent": Color("2e2138"), "ore": Color("b06aff"), "glow": true, "light": Color("b06aff"), "light_energy": 1.2, "hardness": 8.0},
 }
 
 func def(id: int) -> Variant:
