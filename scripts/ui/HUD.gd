@@ -13,6 +13,7 @@ var _root: Control
 var _hp_fill: ColorRect
 var _hp_label: Label
 var _info_label: Label
+var _kin_label: Label
 var _hint: Label
 var _clock_label: Label
 var _peaceful_label: Label
@@ -174,6 +175,7 @@ func _process(_dt: float) -> void:
 		var biome := _biome_name(Game.world.biome_at(t.x))
 		_info_label.text = "%s    depth %d" % [biome, maxi(0, depth)]
 	_clock_label.text = "Day %d  %s  %s" % [Game.day_count, Game.clock_string(), Game.day_phase()]
+	_update_kin_label()
 	_peaceful_label.visible = not Game.enemies_enabled
 	_update_vignette()
 	_update_tooltip()
@@ -200,6 +202,24 @@ func _process(_dt: float) -> void:
 func _refresh_pod() -> void:
 	for i in StoragePod.SIZE:
 		_fill_slot(_pod_slots[i], _open_pod.slots[i], false)
+
+func _update_kin_label() -> void:
+	# show the Kin relationship once you've met them (rep > 0)
+	if Game.alien_betrayed:
+		_kin_label.text = "KIN  ✕ hostile"
+		_kin_label.modulate = Color("ff6a6a")
+		_kin_label.visible = true
+	elif Game.aliens_friendly():
+		_kin_label.text = "KIN  ✓ allied"
+		_kin_label.modulate = Color("6affb0")
+		_kin_label.visible = true
+	elif Game.alien_rep > 0.0:
+		var pct := int(Game.alien_rep / Game.ALIEN_FRIEND_AT * 100.0)
+		_kin_label.text = "KIN  trust %d%%" % pct
+		_kin_label.modulate = Color("9fe0c0").lerp(Color("6affb0"), Game.alien_rep / Game.ALIEN_FRIEND_AT)
+		_kin_label.visible = true
+	else:
+		_kin_label.visible = false
 
 func _update_vignette() -> void:
 	var ratio := Game.health / Game.max_health
@@ -412,6 +432,11 @@ func _build_info() -> void:
 	_info_label.modulate = Color("9fb0ff")
 	_info_label.position = Vector2(18, 52)
 	add_child_control(_info_label)
+
+	_kin_label = _make_label("", 14)
+	_kin_label.position = Vector2(18, 74)
+	_kin_label.visible = false
+	add_child_control(_kin_label)
 
 	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  M map  •  P peaceful  •  Esc pause", 13)
 	_hint.modulate = Color(0.7, 0.75, 0.9, 0.8)

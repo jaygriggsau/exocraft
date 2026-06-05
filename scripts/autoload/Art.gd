@@ -28,8 +28,10 @@ const WATER_LEVELS := 8  ## fill-height steps for the liquid simulation render
 var _tree_cache := {}    # "biome_seed" -> ImageTexture (each tree is unique)
 
 # decor tile ids (atlas columns in the decor tileset)
-enum { TUFT_WASTES, TUFT_TUNDRA, TUFT_DUNES, TUFT_JUNGLE, ROCK, FLOWER, MUSHROOM }
-const DECOR_COUNT := 7
+enum { TUFT_WASTES, TUFT_TUNDRA, TUFT_DUNES, TUFT_JUNGLE, ROCK, FLOWER, MUSHROOM,
+	GLOWSHROOM, CRYSTAL_CLUSTER, STALACTITE, STALAGMITE }
+const DECOR_COUNT := 11
+var _corp_base_tex: ImageTexture
 
 func _ready() -> void:
 	_build_tile_images()
@@ -480,7 +482,61 @@ func _simple_frames(gen: Callable, count: int, fps: float) -> SpriteFrames:
 		sf.remove_animation("default")
 	return sf
 
+# --- Faction units (Corp robots/drones + cave aliens) ----------------------
+func _body_robot(img: Image) -> void:
+	var steel := Color("4a5266")
+	var steel_l := Color("6b7390")
+	var red := Color("ff3a3a")
+	_rect(img, 3, 2, 12, 9, steel)              # torso
+	_rect(img, 3, 2, 12, 2, steel_l)            # top highlight
+	_rect(img, 4, 4, 10, 1, Color("2a3040"))    # vent seam
+	_rect(img, 5, 6, 8, 3, Color("10141d"))     # visor housing
+	_rect(img, 6, 7, 6, 1, red)                 # red optic band
+	img.set_pixel(11, 7, red.lightened(0.5))
+	_rect(img, 14, 4, 3, 2, steel_l)            # shoulder cannon
+	_rect(img, 16, 4, 1, 2, red)
+	img.set_pixel(4, 3, red)                    # corp light
+
+func _body_kin(img: Image) -> void:
+	var body := Color("3aa890")
+	var body_l := Color("5fd0b0")
+	var dark := Color("1f5a4a")
+	_rect(img, 3, 3, 10, 7, body)               # rounded torso
+	_rect(img, 4, 3, 8, 2, body_l)
+	_rect(img, 2, 5, 2, 4, body)                # side bulges
+	_rect(img, 12, 5, 2, 4, body)
+	_rect(img, 5, 5, 5, 3, Color("eafff8"))     # big friendly eye
+	_rect(img, 7, 6, 2, 2, Color("123026"))     # pupil
+	_rect(img, 5, 0, 1, 3, dark)                # antennae
+	img.set_pixel(5, 0, body_l)
+	_rect(img, 10, 0, 1, 3, dark)
+	img.set_pixel(10, 0, body_l)
+
+func _corpdrone_image(frame: int) -> Image:
+	var img := _new_image(16, 12)
+	var hull := Color("5a6076")
+	var hull_l := Color("808aa6")
+	var red := Color("ff3a3a")
+	_rect(img, 5, 3, 6, 5, hull)                # core
+	_rect(img, 5, 3, 6, 1, hull_l)
+	_rect(img, 6, 5, 4, 1, Color("10141d"))     # optic slit
+	var ex := 6
+	var tw := 2
+	if frame >= 0:
+		ex = 6 + [0, 1, 2, 1][frame]            # scanning eye
+		tw = 3 if frame % 2 == 1 else 2          # rotor flicker
+	img.set_pixel(ex, 5, red)
+	_rect(img, 0, 4, 4, 1, hull_l)              # side arms
+	_rect(img, 12, 4, 4, 1, hull_l)
+	_rect(img, 1, 3, 1, tw, hull)               # rotors
+	_rect(img, 14, 3, 1, tw, hull)
+	_rect(img, 7, 8, 2, 1, red.darkened(0.1))   # thruster glow
+	return img
+
 func _build_creature_frames() -> void:
+	_creature_frames["robot"] = _legged_frames(18, 16, _body_robot, [[3, 11, 5], [7, 11, 5], [11, 11, 5], [14, 11, 5]], Color("3a4254"), 2)
+	_creature_frames["kin"] = _legged_frames(16, 14, _body_kin, [[3, 10, 4], [6, 10, 4], [9, 10, 4], [12, 10, 4]], Color("1f5a4a"), 1)
+	_creature_frames["corpdrone"] = _simple_frames(_corpdrone_image, 4, 8.0)
 	_creature_frames["crawler"] = _legged_frames(18, 12, _body_crawler, [[4, 9, 3], [7, 9, 3], [10, 9, 3], [13, 9, 3]], Color("4a1d57"), 1)
 	_creature_frames["grazer"] = _legged_frames(20, 14, _body_grazer, [[4, 10, 4], [8, 10, 4], [12, 10, 4], [15, 10, 4]], Color("5f6c49"), 2)
 	_creature_frames["stalker"] = _legged_frames(22, 12, _body_stalker, [[4, 9, 3], [8, 9, 3], [12, 9, 3], [15, 9, 3]], Color("3a2350"), 2)
@@ -491,6 +547,49 @@ func _build_creature_frames() -> void:
 
 func creature_frames(name: String) -> SpriteFrames:
 	return _creature_frames.get(name)
+
+func _make_corp_base() -> Image:
+	# A high-tech surface bunker: armoured base, a control tower and an antenna
+	# crowned with a red beacon. Origin is bottom-centre (sits on the ground).
+	var w := 56
+	var h := 52
+	var img := _new_image(w, h)
+	var steel := Color("39414f")
+	var steel_l := Color("586377")
+	var steel_d := Color("23293a")
+	var red := Color("ff3a3a")
+	var neon := Color("2dffff")
+	# wide armoured bunker (trapezoid)
+	for y in range(h - 18, h):
+		var inset := (h - 1 - y) / 3
+		_rect(img, 2 + inset, y, w - 4 - inset * 2, 1, steel if y % 2 == 0 else steel_d)
+	_rect(img, 2, h - 18, w - 4, 1, steel_l)
+	# blast doors + neon trim
+	_rect(img, w / 2 - 6, h - 12, 12, 12, steel_d)
+	_rect(img, w / 2 - 6, h - 12, 12, 1, neon)
+	_rect(img, w / 2 - 1, h - 12, 2, 12, steel)
+	# corner pylons with red lamps
+	for px in [5, w - 8]:
+		_rect(img, px, h - 26, 3, 9, steel)
+		_rect(img, px, h - 27, 3, 1, red)
+	# control tower
+	_rect(img, w / 2 - 9, h - 36, 18, 19, steel)
+	_rect(img, w / 2 - 9, h - 36, 18, 1, steel_l)
+	_rect(img, w / 2 - 6, h - 32, 12, 5, Color("0a1018"))   # window
+	for i in 3:
+		_rect(img, w / 2 - 5 + i * 4, h - 31, 2, 3, neon.darkened(randf_range(0.0, 0.5)))
+	_rect(img, w / 2 - 9, h - 20, 18, 2, steel_d)
+	# antenna mast + beacon
+	_rect(img, w / 2 - 1, h - 48, 2, 12, steel_l)
+	_rect(img, w / 2 - 3, h - 49, 6, 2, steel)
+	_rect(img, w / 2 - 1, h - 51, 2, 2, red)                # beacon
+	img.set_pixel(w / 2, h - 51, red.lightened(0.5))
+	return img
+
+func corp_base_texture() -> Texture2D:
+	if _corp_base_tex == null:
+		_corp_base_tex = _ptex(_make_corp_base())
+	return _corp_base_tex
 
 func _make_workbench() -> Image:
 	var img := _new_image(30, 20)
@@ -700,7 +799,49 @@ func _make_decor(id: int) -> Image:
 			_rect(img, 5, TS - 11, 6, 1, cap)
 			img.set_pixel(6, TS - 9, cap.lightened(0.4))
 			img.set_pixel(9, TS - 9, cap.lightened(0.4))
+		GLOWSHROOM:
+			# bioluminescent cave mushroom (sits on the floor, glows cyan)
+			_rect(img, 7, TS - 7, 2, 6, Color("9fb8c0"))      # pale stalk
+			var gc := Color(0.45, 1.6, 1.9)                   # HDR cyan -> bloom
+			_rect(img, 5, TS - 11, 6, 4, gc)
+			_rect(img, 6, TS - 12, 4, 1, gc)
+			img.set_pixel(6, TS - 10, Color(0.8, 2.0, 2.2))
+			img.set_pixel(9, TS - 10, Color(0.8, 2.0, 2.2))
+			img.set_pixel(4, TS - 4, gc)                      # spores
+			img.set_pixel(11, TS - 3, gc)
+		CRYSTAL_CLUSTER:
+			# angular glowing crystals jutting up from the floor (magenta)
+			var cc := Color(1.7, 0.35, 1.5)                   # HDR magenta
+			var cc_l := Color(2.0, 0.8, 1.9)
+			_rect(img, 6, TS - 9, 2, 8, cc)
+			_rect(img, 6, TS - 9, 1, 8, cc_l)
+			_rect(img, 9, TS - 6, 2, 5, cc)
+			_rect(img, 9, TS - 6, 1, 5, cc_l)
+			_rect(img, 4, TS - 5, 1, 4, cc)
+			img.set_pixel(6, TS - 9, Color(2.2, 1.2, 2.1))
+		STALACTITE:
+			# hangs from the ceiling (drawn at the top of the cell)
+			var sk := Color("3a3850")
+			var sk_l := Color("55527a")
+			for y in 9:
+				var w := maxi(1, 5 - y / 2)
+				_rect(img, 8 - w / 2, y, w, 1, sk if y % 2 == 0 else sk_l)
+			img.set_pixel(8, 0, sk_l)
+		STALAGMITE:
+			# rises from the floor (drawn at the bottom of the cell)
+			var mk := Color("3a3850")
+			var mk_l := Color("55527a")
+			for y in 9:
+				var w := maxi(1, 5 - (8 - y) / 2)
+				_rect(img, 8 - w / 2, TS - 1 - y, w, 1, mk if y % 2 == 0 else mk_l)
 	return img
+
+## Non-transparent colour for glowing cave decor (drives a point light), else 0.
+func decor_glow(id: int) -> Color:
+	match id:
+		GLOWSHROOM: return Color(0.35, 0.95, 1.0)
+		CRYSTAL_CLUSTER: return Color(1.0, 0.35, 0.95)
+		_: return Color(0, 0, 0, 0)
 
 func _build_decor_tileset() -> void:
 	var atlas := _new_image(DECOR_COUNT * TS, TS)

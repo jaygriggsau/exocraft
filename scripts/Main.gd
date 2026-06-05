@@ -4,6 +4,7 @@ extends Node2D
 
 const HUDScript := preload("res://scripts/ui/HUD.gd")
 const SpawnerScript := preload("res://scripts/world/EnemySpawner.gd")
+const FactionScript := preload("res://scripts/world/FactionSpawner.gd")
 
 func _ready() -> void:
 	_build_environment()
@@ -28,6 +29,11 @@ func _ready() -> void:
 	spawner.set_script(SpawnerScript)
 	spawner.name = "EnemySpawner"
 	add_child(spawner)
+
+	var factions := Node.new()
+	factions.set_script(FactionScript)
+	factions.name = "FactionSpawner"
+	add_child(factions)
 
 	var hud := CanvasLayer.new()
 	hud.set_script(HUDScript)

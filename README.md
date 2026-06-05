@@ -51,7 +51,13 @@ godot --path .
   in memory; generation is deterministic per world seed.
 - **Four surface biomes** chosen by low-frequency noise — Neon Wastes, Cryo Tundra,
   Glass Dunes, Toxic Jungle — plus an underground Slate layer that turns into the
-  Obsidite biome at depth, threaded with caves and ore veins.
+  Obsidite biome at depth, threaded with ore veins.
+- **Sculpted caves**: the underground is carved by **winding worm tunnels** (the
+  intersection of two noise iso-surfaces traces long connected corridors) plus
+  **open caverns** that grow larger and more frequent with depth — so digging
+  down opens into real explorable chambers, not random blobs. Caves are dressed
+  with **bioluminescent flora**: glowing mushrooms and magenta crystal clusters
+  (each casts a soft light), stalagmites, stalactites and rocks.
 - **Per-biome surface life**: harvestable **alien trees**, each **procedurally
   unique** (curved, tapering, bark-textured trunks that lean and branch, with
   randomized canopies — glowing neon, crystalline ice, glass succulents, toxic
@@ -118,6 +124,20 @@ godot --path .
     (drop scrap / ores). Peaceful mode (`P`) clears these but leaves the passive
     animals roaming.
   - Spawned in a ring just off-screen up to a cap; you can hunt any of them.
+- **Two factions** sharing the world, with their own turf and AI:
+  - **Corp** — a high-tech corporate robot army that **garrisons fixed surface
+    bases** (a bunker with a control tower and a pulsing red beacon, placed at
+    deterministic, spaced-out sites). Bases reinforce a **patrol of robots and
+    drones** — melee bruisers, ranged sentries and flying attack drones — that
+    **hold the ground around their base and only give chase if you come close**,
+    breaking off to return home if you lead them too far. They don't dig. Drop
+    scrap, ingots and components. Peaceful mode (`P`) stands them down.
+  - **The Kin** — an underground alien race that lives in the caves and **mines
+    the rock** (slowly carving the stone around them, never your ores). They
+    **never strike first**: spend peaceful time near them and their **trust grows
+    until they turn allied for good** (a HUD readout tracks it) — but **attack one
+    and they fight back and remember the betrayal**. Drop crystal, biomass and the
+    occasional exotic matter.
 - **Animated player**: idle breathing bob, a 4-frame run cycle, and jump / fall
   poses, all built from runtime-generated frames driven by an `AnimatedSprite2D`.
 - **Animated fauna**: every creature has runtime-generated frames too — walk

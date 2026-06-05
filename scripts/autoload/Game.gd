@@ -9,6 +9,7 @@ signal inventory_changed
 signal health_changed(current: float, maximum: float)
 signal player_died
 signal enemies_toggled(enabled: bool)
+signal alien_rep_changed(rep: float, friendly: bool)
 
 # Untyped on purpose: typing these as World/Player would create a parse-time
 # dependency cycle (those scripts reference this autoload back). Call sites
@@ -30,6 +31,13 @@ var enemies_enabled := true ## peaceful mode toggle
 
 var crafted := {}          ## ids of recipes/stations ever crafted (gates unlocks)
 var max_tier_seen := 0     ## highest item tier obtained (gates "tier>=N")
+
+# Reputation with the underground alien Kin: rises while you spend peaceful time
+# near them, falls (and turns them hostile) if you attack them. At FRIEND_AT they
+# turn friendly for good and stop being a threat.
+const ALIEN_FRIEND_AT := 100.0
+var alien_rep := 0.0
+var alien_betrayed := false   ## attacked them after befriending — they distrust you
 
 func _ready() -> void:
 	randomize()
@@ -77,6 +85,16 @@ func set_enemies_enabled(v: bool) -> void:
 
 func toggle_enemies() -> void:
 	set_enemies_enabled(not enemies_enabled)
+
+func aliens_friendly() -> bool:
+	return alien_rep >= ALIEN_FRIEND_AT and not alien_betrayed
+
+func add_alien_rep(delta: float) -> void:
+	var before := aliens_friendly()
+	alien_rep = clampf(alien_rep + delta, 0.0, ALIEN_FRIEND_AT)
+	if delta < 0.0 and before:
+		alien_betrayed = true        # turning on friends has a lasting cost
+	alien_rep_changed.emit(alien_rep, aliens_friendly())
 
 func clock_string() -> String:
 	var mins := int(time_of_day * 24.0 * 60.0)

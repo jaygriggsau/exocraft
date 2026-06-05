@@ -43,6 +43,7 @@ var chunks := {}                    # Vector2i -> PackedInt32Array
 var _loaded := {}                   # Vector2i -> true (currently rendered)
 var _chunk_lights := {}             # Vector2i -> Array[PointLight2D]
 var _chunk_decor := {}              # Vector2i -> Array[Vector2i] decor cells
+var _cave_glow := {}                # Vector2i decor cell -> Color (glowing cave flora)
 var _chunk_trees := {}              # Vector2i -> Array[AlienTree]
 var _tree_at := {}                  # Vector2i tile -> AlienTree (harvest lookup)
 var _tree_removed := {}             # world tile-x -> true (harvested, don't respawn)
@@ -55,7 +56,10 @@ const STORAGE_RANGE := 112.0        # px: how close a pod feeds a station
 
 var _height_noise := FastNoiseLite.new()
 var _biome_noise := FastNoiseLite.new()
-var _cave_noise := FastNoiseLite.new()
+var _cave_noise := FastNoiseLite.new()      # shallow pockets just under the crust
+var _cavern_noise := FastNoiseLite.new()    # large open chambers, deeper down
+var _tunnel_a := FastNoiseLite.new()        # winding worm tunnels (iso-surface A)
+var _tunnel_b := FastNoiseLite.new()        # winding worm tunnels (iso-surface B)
 var _ore_noise := FastNoiseLite.new()       # where ore appears at all
 var _ore_kind_noise := FastNoiseLite.new()  # wobbles the depth->quality bands
 
@@ -84,7 +88,7 @@ func _ready() -> void:
 
 func _setup_noise() -> void:
 	var s := Game.world_seed
-	for n in [_height_noise, _biome_noise, _cave_noise, _ore_noise, _ore_kind_noise]:
+	for n in [_height_noise, _biome_noise, _cave_noise, _cavern_noise, _tunnel_a, _tunnel_b, _ore_noise, _ore_kind_noise]:
 		n.noise_type = FastNoiseLite.TYPE_PERLIN
 	_height_noise.seed = s
 	_height_noise.frequency = 0.018
@@ -92,6 +96,12 @@ func _setup_noise() -> void:
 	_biome_noise.frequency = 0.004
 	_cave_noise.seed = s + 31
 	_cave_noise.frequency = 0.07
+	_cavern_noise.seed = s + 131
+	_cavern_noise.frequency = 0.026          # big rooms
+	_tunnel_a.seed = s + 211
+	_tunnel_a.frequency = 0.034              # long sweeping corridors
+	_tunnel_b.seed = s + 307
+	_tunnel_b.frequency = 0.038
 	_ore_noise.seed = s + 53
 	_ore_noise.frequency = 0.12
 	_ore_kind_noise.seed = s + 71
@@ -399,6 +409,7 @@ func _stream(center: Vector2i) -> void:
 		if not _loaded.has(cc):
 			_render_chunk(cc)
 			_decorate_chunk(cc)
+			_cave_decorate_chunk(cc)
 			_fog_chunk(cc)
 			_seed_water_chunk(cc)
 			_render_water_chunk(cc)
@@ -441,6 +452,17 @@ func _build_chunk_lights(cc: Vector2i) -> void:
 				lite.position = tile_to_world_center(Vector2i(ox + lx, oy + ly))
 				add_child(lite)
 				arr.append(lite)
+	# glowing cave flora in this chunk casts a soft local light too
+	for cell in _cave_glow:
+		if chunk_of_tile(cell) == cc:
+			var gl := PointLight2D.new()
+			gl.texture = Art.light_texture()
+			gl.color = _cave_glow[cell]
+			gl.energy = 0.7
+			gl.scale = Vector2(0.28, 0.28)
+			gl.position = tile_to_world_center(cell)
+			add_child(gl)
+			arr.append(gl)
 	_chunk_lights[cc] = arr
 
 func _free_chunk_lights(cc: Vector2i) -> void:
@@ -504,6 +526,49 @@ func _decorate_chunk(cc: Vector2i) -> void:
 	_chunk_decor[cc] = cells
 	_chunk_trees[cc] = trees
 
+## Dress the underground: cave flora on floors (glowing mushrooms, crystal
+## clusters, stalagmites, rocks) and stalactites on ceilings, so caverns feel
+## alive instead of empty rock. Glowing pieces also seed a point light.
+func _cave_decorate_chunk(cc: Vector2i) -> void:
+	var oy := cc.y * CHUNK
+	if oy + CHUNK <= 8:
+		return                                   # nothing to decorate up in the sky
+	var ox := cc.x * CHUNK
+	var cells: Array = _chunk_decor.get(cc, [])
+	for lx in CHUNK:
+		var tx := ox + lx
+		var surf := surface_height(tx)
+		for ly in CHUNK:
+			var ty := oy + ly
+			if ty <= surf + SOIL_DEPTH:
+				continue                         # only the real cave layer
+			if get_tile(Vector2i(tx, ty)) != Tiles.AIR:
+				continue
+			var cell := Vector2i(tx, ty)
+			var floor_solid := Tiles.is_solid(get_tile(Vector2i(tx, ty + 1)))
+			var ceil_solid := Tiles.is_solid(get_tile(Vector2i(tx, ty - 1)))
+			var r := _rand01(tx * 911 + ty, 7)
+			var decor_id := -1
+			if floor_solid and not ceil_solid:
+				if r < 0.025:
+					decor_id = Art.CRYSTAL_CLUSTER
+				elif r < 0.075:
+					decor_id = Art.GLOWSHROOM
+				elif r < 0.17:
+					decor_id = Art.STALAGMITE
+				elif r < 0.25:
+					decor_id = Art.ROCK
+			elif ceil_solid and not floor_solid and r < 0.12:
+				decor_id = Art.STALACTITE
+			if decor_id < 0:
+				continue
+			decor_map.set_cell(cell, Art.decor_source_id, Art.decor_atlas_coords(decor_id))
+			cells.append(cell)
+			var glow: Color = Art.decor_glow(decor_id)
+			if glow.a > 0.0:
+				_cave_glow[cell] = glow
+	_chunk_decor[cc] = cells
+
 func _spawn_tree(tx: int, surf_y: int, biome: int, trees: Array) -> void:
 	var occ: Array = []
 	for ty in range(surf_y - 1, surf_y - 5, -1):
@@ -532,10 +597,11 @@ func _tree_drops(biome: int) -> Array:
 	return drops
 
 func _clear_decor(cell: Vector2i) -> void:
-	# remove a surface decoration (grass tuft, rock, flower...) at this cell
+	# remove a surface/cave decoration (tuft, rock, mushroom, crystal...) here
 	if decor_map.get_cell_source_id(cell) == -1:
 		return
 	decor_map.erase_cell(cell)
+	_cave_glow.erase(cell)
 	var cc := chunk_of_tile(cell)
 	if _chunk_decor.has(cc):
 		_chunk_decor[cc].erase(cell)
@@ -543,6 +609,7 @@ func _clear_decor(cell: Vector2i) -> void:
 func _undecorate_chunk(cc: Vector2i) -> void:
 	for cell in _chunk_decor.get(cc, []):
 		decor_map.erase_cell(cell)
+		_cave_glow.erase(cell)
 	_chunk_decor.erase(cc)
 	for tr in _chunk_trees.get(cc, []):
 		if is_instance_valid(tr):
@@ -779,13 +846,31 @@ func _gen_tile(tx: int, ty: int, surf: int, biome: int) -> int:
 			return Tiles.AIR
 		return _soil_tile(biome)
 
-	# underground stone layer
-	if _cave_noise.get_noise_2d(float(tx), float(ty)) > 0.45:
-		return Tiles.AIR                     # caves
+	# underground stone layer — winding tunnels + open caverns
+	if _is_cave(tx, ty, surf):
+		return Tiles.AIR
 
 	var stone := Tiles.DARKROCK if ty > DEEP_Y else Tiles.STONE
 	var ore := _ore_at(tx, ty)
 	return ore if ore != Tiles.AIR else stone
+
+## Carve the underground into something worth exploring: sweeping worm tunnels
+## (the intersection of two near-zero noise iso-surfaces traces connected 1-D
+## corridors) plus large open caverns that grow more common with depth.
+func _is_cave(tx: int, ty: int, surf: int) -> bool:
+	var depth := float(ty - surf)
+	var df := clampf(depth / 220.0, 0.0, 1.0)        # 0 near surface, 1 deep
+	# winding corridors: both fields near zero at once -> a thin 1-D path
+	var hw := 0.055 + 0.045 * df                       # tunnels widen with depth
+	var a := _tunnel_a.get_noise_2d(float(tx), float(ty))
+	var b := _tunnel_b.get_noise_2d(float(tx), float(ty))
+	if absf(a) < hw and absf(b) < hw:
+		return true
+	# big chambers: easier threshold deeper, so the depths open right up
+	var cav := _cavern_noise.get_noise_2d(float(tx), float(ty))
+	if cav > lerpf(0.50, 0.30, df):
+		return true
+	return false
 
 ## Decide which ore (if any) is embedded in the stone at this tile.
 ## Ore gets *better* the deeper you go (Ferralite → Vyrite → Ion → Exotic) but
