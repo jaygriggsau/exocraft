@@ -31,7 +31,6 @@ var _tree_cache := {}    # "biome_seed" -> ImageTexture (each tree is unique)
 enum { TUFT_WASTES, TUFT_TUNDRA, TUFT_DUNES, TUFT_JUNGLE, ROCK, FLOWER, MUSHROOM,
 	GLOWSHROOM, CRYSTAL_CLUSTER, STALACTITE, STALAGMITE }
 const DECOR_COUNT := 11
-var _corp_base_tex: ImageTexture
 
 func _ready() -> void:
 	_build_tile_images()
@@ -547,49 +546,6 @@ func _build_creature_frames() -> void:
 
 func creature_frames(name: String) -> SpriteFrames:
 	return _creature_frames.get(name)
-
-func _make_corp_base() -> Image:
-	# A high-tech surface bunker: armoured base, a control tower and an antenna
-	# crowned with a red beacon. Origin is bottom-centre (sits on the ground).
-	var w := 56
-	var h := 52
-	var img := _new_image(w, h)
-	var steel := Color("39414f")
-	var steel_l := Color("586377")
-	var steel_d := Color("23293a")
-	var red := Color("ff3a3a")
-	var neon := Color("2dffff")
-	# wide armoured bunker (trapezoid)
-	for y in range(h - 18, h):
-		var inset := (h - 1 - y) / 3
-		_rect(img, 2 + inset, y, w - 4 - inset * 2, 1, steel if y % 2 == 0 else steel_d)
-	_rect(img, 2, h - 18, w - 4, 1, steel_l)
-	# blast doors + neon trim
-	_rect(img, w / 2 - 6, h - 12, 12, 12, steel_d)
-	_rect(img, w / 2 - 6, h - 12, 12, 1, neon)
-	_rect(img, w / 2 - 1, h - 12, 2, 12, steel)
-	# corner pylons with red lamps
-	for px in [5, w - 8]:
-		_rect(img, px, h - 26, 3, 9, steel)
-		_rect(img, px, h - 27, 3, 1, red)
-	# control tower
-	_rect(img, w / 2 - 9, h - 36, 18, 19, steel)
-	_rect(img, w / 2 - 9, h - 36, 18, 1, steel_l)
-	_rect(img, w / 2 - 6, h - 32, 12, 5, Color("0a1018"))   # window
-	for i in 3:
-		_rect(img, w / 2 - 5 + i * 4, h - 31, 2, 3, neon.darkened(randf_range(0.0, 0.5)))
-	_rect(img, w / 2 - 9, h - 20, 18, 2, steel_d)
-	# antenna mast + beacon
-	_rect(img, w / 2 - 1, h - 48, 2, 12, steel_l)
-	_rect(img, w / 2 - 3, h - 49, 6, 2, steel)
-	_rect(img, w / 2 - 1, h - 51, 2, 2, red)                # beacon
-	img.set_pixel(w / 2, h - 51, red.lightened(0.5))
-	return img
-
-func corp_base_texture() -> Texture2D:
-	if _corp_base_tex == null:
-		_corp_base_tex = _ptex(_make_corp_base())
-	return _corp_base_tex
 
 func _make_workbench() -> Image:
 	var img := _new_image(30, 20)

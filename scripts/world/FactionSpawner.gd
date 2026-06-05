@@ -6,8 +6,6 @@ extends Node
 ##   KIN  - the underground alien race: spawned in cave pockets near the player
 ##          while they're below ground, up to a cap. Neutral (see Creature).
 
-const BaseScene := preload("res://scripts/entities/CorpBase.gd")
-
 # --- Corp surface bases ---
 const CORP_SPACING := 84            # tiles between candidate base sites
 const CORP_VIEW := 70              # tiles: materialise a base within this of the player
@@ -18,7 +16,8 @@ const KIN_INTERVAL := 3.0
 const KIN_MAX := 6
 const KIN_MIN_DEPTH := 12           # tiles below the surface before Kin appear
 
-var _bases := {}                    # site index -> CorpBase
+var _bases := {}                    # site index -> CorpBase node (present only when near)
+var _built := {}                    # site index -> true once its blocks are stamped
 var _kt := 0.0
 
 func _process(dt: float) -> void:
@@ -56,11 +55,20 @@ func _update_corp(_dt: float) -> void:
 
 func _spawn_base(site: int, tx: int) -> void:
 	var w = Game.world
-	var sy: int = w.surface_tile_y(tx)
-	var base := BaseScene.new()
+	# flat floor for the bunker = the highest ground across its footprint, so the
+	# building never floats (foundation pillars fill any dips beneath it)
+	var fy: int = w.surface_tile_y(tx)
+	for col in range(tx - CorpBase.HALF, tx + CorpBase.HALF + 1):
+		fy = mini(fy, w.surface_tile_y(col))
+	var base := CorpBase.new()
 	base.patrol_radius = CORP_PATROL
-	base.global_position = Vector2(tx * World.TILE + World.TILE / 2.0, sy * World.TILE)
+	base.center_tx = tx
+	base.floor_y = fy
+	base.global_position = Vector2((tx + 0.5) * World.TILE, fy * World.TILE)
 	w.add_child(base)
+	if not _built.has(site):
+		base.build_structure()       # stamp the blocks once; they persist after
+		_built[site] = true
 	_bases[site] = base
 
 # ---------------------------------------------------------------------------

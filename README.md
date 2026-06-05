@@ -126,8 +126,11 @@ godot --path .
   - Spawned in a ring just off-screen up to a cap; you can hunt any of them.
 - **Two factions** sharing the world, with their own turf and AI:
   - **Corp** — a high-tech corporate robot army that **garrisons fixed surface
-    bases** (a bunker with a control tower and a pulsing red beacon, placed at
-    deterministic, spaced-out sites). Bases reinforce a **patrol of robots and
+    bases**, each **built out of real in-world blocks** (Hull Plating walls and
+    Neon Glass-lit windows around a control tower and antenna beacon, on
+    foundation pillars that follow the ground) — so a base is part of the terrain
+    and **can be mined**. Bases sit at deterministic, spaced-out sites and
+    reinforce a **patrol of robots and
     drones** — melee bruisers, ranged sentries and flying attack drones — that
     **hold the ground around their base and only give chase if you come close**,
     breaking off to return home if you lead them too far. They don't dig. Drop
