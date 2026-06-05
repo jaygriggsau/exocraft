@@ -37,6 +37,7 @@ var _mine_target := Vector2i(2147483647, 0)
 var _mine_obj = null            # station/pod currently being dismantled
 var _mine_progress := 0.0
 var _place_cd := 0.0
+var _door_cd := 0.0
 var _fire_cd := 0.0
 var _invuln := 0.0
 var _no_dmg := 0.0
@@ -107,6 +108,7 @@ func _starting_kit() -> void:
 # ---------------------------------------------------------------------------
 func _physics_process(dt: float) -> void:
 	_place_cd = maxf(0.0, _place_cd - dt)
+	_door_cd = maxf(0.0, _door_cd - dt)
 	_fire_cd = maxf(0.0, _fire_cd - dt)
 	_invuln = maxf(0.0, _invuln - dt)
 
@@ -182,7 +184,11 @@ func _handle_interaction(dt: float) -> void:
 	var t := ItemDB.type_of(sel) if sel != "" else -1
 
 	if primary:
-		if it and it.stats.has("pour_water"):
+		var tt := _target_tile()
+		if _door_cd <= 0.0 and Tiles.is_door(Game.world.get_tile(tt)) and _in_reach(tt):
+			if _toggle_door(tt):           # click a door to open / close it
+				_door_cd = 0.3
+		elif it and it.stats.has("pour_water"):
 			_try_pour()
 		else:
 			match t:
@@ -259,7 +265,8 @@ func _try_mine(dt: float) -> bool:
 		return true
 
 	var id: int = Game.world.get_tile(t)
-	if not Tiles.is_solid(id):
+	var is_door := Tiles.is_door(id)
+	if not Tiles.is_solid(id) and not is_door:
 		# no block here, but the particle gun can suck up any liquid in the cell
 		if Game.world.water_at(t) > 0.0:
 			Game.world.drain_water(t, DRAIN_RATE * dt * 60.0 * MINE_BASE * _mining_power())
@@ -269,9 +276,9 @@ func _try_mine(dt: float) -> bool:
 			fx.set_state(true, t, global_position + _mine_dir * 6.0, wc, wc, 0.4, false)
 			return true
 		return false
-	# only mine blocks exposed to open space, so you can't dig more than one
-	# block deep into solid terrain at a time
-	if not _is_exposed(t):
+	# only mine solid blocks exposed to open space, so you can't dig more than one
+	# block deep into solid terrain at a time (doors are always reachable)
+	if not is_door and not _is_exposed(t):
 		return false
 	if t != _mine_target:
 		_mine_target = t
@@ -291,7 +298,12 @@ func _try_mine(dt: float) -> bool:
 
 	if _mine_progress >= dur:
 		_mine_progress = 0.0
-		Game.world.set_tile(t, Tiles.AIR)
+		if is_door:
+			# the whole 2-tall door comes out as one item (it went in as one)
+			for c in _door_run(t):
+				Game.world.set_tile(c, Tiles.AIR)
+		else:
+			Game.world.set_tile(t, Tiles.AIR)
 		Sfx.play("mine")
 		_spawn_drop(t, Tiles.drop_item(id))
 	return true
@@ -314,8 +326,47 @@ func _spawn_drop(t: Vector2i, item_id: String) -> void:
 	p.setup(item_id, 1, Game.world.tile_to_world_center(t))
 	Game.world.add_child(p)
 
+func _player_rect() -> Rect2:
+	return Rect2(global_position - Vector2(6, 11), Vector2(12, 22))
+
+func _tile_rect(c: Vector2i) -> Rect2:
+	return Rect2(c.x * World.TILE, c.y * World.TILE, World.TILE, World.TILE)
+
+## The contiguous vertical run of door tiles a click landed on (a door is 2 tall).
+func _door_run(t: Vector2i) -> Array:
+	var cells := [t]
+	var c := t + Vector2i(0, -1)
+	while Tiles.is_door(Game.world.get_tile(c)):
+		cells.append(c)
+		c += Vector2i(0, -1)
+	c = t + Vector2i(0, 1)
+	while Tiles.is_door(Game.world.get_tile(c)):
+		cells.append(c)
+		c += Vector2i(0, 1)
+	return cells
+
+func _toggle_door(t: Vector2i) -> bool:
+	var cells := _door_run(t)
+	var becomes_solid := Tiles.is_solid(Tiles.door_toggle(Game.world.get_tile(t)))
+	if becomes_solid:
+		var body := _player_rect()
+		for c in cells:
+			if _tile_rect(c).intersects(body):
+				return false               # never shut a door on yourself
+	for c in cells:
+		var id: int = Game.world.get_tile(c)
+		Game.world.set_tile(c, Tiles.door_toggle(id))
+	Sfx.play("place")
+	return true
+
 func _try_place(item_id: String) -> void:
 	if _place_cd > 0.0:
+		return
+	var tile := ItemDB.place_tile(item_id)
+	if Tiles.is_door(tile):
+		_try_place_door(tile)
+		return
+	if tile == Tiles.AIR:
 		return
 	var t := _target_tile()
 	if not _in_reach(t):
@@ -323,17 +374,38 @@ func _try_place(item_id: String) -> void:
 	if Tiles.is_solid(Game.world.get_tile(t)):
 		return
 	# don't entomb ourselves
-	var tile_rect := Rect2(t.x * World.TILE, t.y * World.TILE, World.TILE, World.TILE)
-	var body := Rect2(global_position - Vector2(6, 11), Vector2(12, 22))
-	if tile_rect.intersects(body):
+	if _tile_rect(t).intersects(_player_rect()):
 		return
 	# require an adjacent solid tile for support
 	if not _has_support(t):
 		return
-	var tile := ItemDB.place_tile(item_id)
-	if tile == Tiles.AIR:
-		return
 	Game.world.set_tile(t, tile)
+	inv.consume_selected(1)
+	_place_cd = PLACE_COOLDOWN
+
+## Doors are two tiles tall (so the player can walk through). Place the clicked
+## cell as the bottom and the cell above as the top, both closed.
+func _try_place_door(closed_tile: int) -> void:
+	var bottom := _target_tile()
+	if not _in_reach(bottom):
+		return
+	var top := bottom + Vector2i(0, -1)
+	var body := _player_rect()
+	for c in [bottom, top]:
+		if Tiles.is_solid(Game.world.get_tile(c)):
+			return
+		if _tile_rect(c).intersects(body):
+			return
+	# support: resting on the ground, or anchored to a wall beside either cell
+	var supported := Tiles.is_solid(Game.world.get_tile(bottom + Vector2i(0, 1)))
+	for c in [bottom, top]:
+		for o in [Vector2i(1, 0), Vector2i(-1, 0)]:
+			if Tiles.is_solid(Game.world.get_tile(c + o)):
+				supported = true
+	if not supported:
+		return
+	Game.world.set_tile(bottom, closed_tile)
+	Game.world.set_tile(top, closed_tile)
 	inv.consume_selected(1)
 	_place_cd = PLACE_COOLDOWN
 

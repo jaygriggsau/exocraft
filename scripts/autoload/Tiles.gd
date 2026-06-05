@@ -20,6 +20,18 @@ const NEON := 11      # crafted neon glass
 const DARKROCK := 12  # deep biome stone
 const WOOD := 13      # harvested/crafted alien wood
 const EXOTIC := 14    # deep exotic-matter ore (tier 3)
+# --- crafted building set (walls / windows / doors) ---
+const STONE_BRICK := 15
+const METAL_WALL := 16
+const OBSIDIAN_BRICK := 17
+const GLASS_WINDOW := 18        # solid but transparent (light passes through)
+const REINFORCED_WINDOW := 19
+const WOOD_DOOR := 20           # doors come in closed/open pairs; open is passable
+const WOOD_DOOR_OPEN := 21
+const METAL_DOOR := 22
+const METAL_DOOR_OPEN := 23
+const BLAST_DOOR := 24
+const BLAST_DOOR_OPEN := 25
 
 ## id -> definition dictionary.
 ## Fields:
@@ -49,13 +61,45 @@ var DEFS := {
 	DARKROCK:{"name": "Obsidite",     "item": "darkrock",    "style": "block",   "base": Color("1a1320"), "accent": Color("2e2138"), "glow": false, "hardness": 5.5},
 	WOOD:    {"name": "Bio-Timber",   "item": "wood",        "style": "plating", "base": Color("584438"), "accent": Color("7c6b4e"), "glow": false, "hardness": 1.4},
 	EXOTIC:  {"name": "Exotic Vein",  "item": "exotic_matter","style": "ore",    "base": Color("1a1320"), "accent": Color("2e2138"), "ore": Color("b06aff"), "glow": true, "light": Color("b06aff"), "light_energy": 1.2, "hardness": 8.0},
+	# --- crafted walls ---
+	STONE_BRICK: {"name": "Slate Brick",      "item": "stone_brick",      "style": "brick", "base": Color("3a3c4e"), "accent": Color("555876"), "glow": false, "hardness": 2.0},
+	METAL_WALL:  {"name": "Metal Wall",       "item": "metal_wall",       "style": "panel", "base": Color("5a6076"), "accent": Color("9aa0c0"), "glow": false, "hardness": 3.0},
+	OBSIDIAN_BRICK: {"name": "Obsidite Brick","item": "obsidian_brick",   "style": "brick", "base": Color("241a32"), "accent": Color("3e2e52"), "glow": false, "hardness": 6.0},
+	# --- windows (solid, see-through: keep collision, skip light occluder) ---
+	GLASS_WINDOW:     {"name": "Glass Window",      "item": "glass_window",     "style": "window", "base": Color("6a7a86"), "accent": Color("aee8ff"), "glow": false, "no_occlude": true, "hardness": 1.0},
+	REINFORCED_WINDOW:{"name": "Reinforced Window", "item": "reinforced_window","style": "window", "base": Color("7a80b0"), "accent": Color("bfeaff"), "glow": false, "no_occlude": true, "hardness": 2.6},
+	# --- doors (closed = solid wall; open = passable doorway) ---
+	WOOD_DOOR:      {"name": "Timber Door", "item": "wood_door",  "style": "door",      "base": Color("6b4f34"), "accent": Color("452f1c"), "handle": Color("d8c060"), "glow": false, "door": true, "door_open": WOOD_DOOR_OPEN, "hardness": 1.5},
+	WOOD_DOOR_OPEN: {"name": "Timber Door", "item": "wood_door",  "style": "door_open", "base": Color("6b4f34"), "accent": Color("452f1c"), "handle": Color("d8c060"), "glow": false, "door": true, "passable": true, "door_closed": WOOD_DOOR, "hardness": 1.5},
+	METAL_DOOR:      {"name": "Metal Door", "item": "metal_door", "style": "door",      "base": Color("5a6076"), "accent": Color("2a3040"), "handle": Color("c4c4d6"), "glow": false, "door": true, "door_open": METAL_DOOR_OPEN, "hardness": 3.0},
+	METAL_DOOR_OPEN: {"name": "Metal Door", "item": "metal_door", "style": "door_open", "base": Color("5a6076"), "accent": Color("2a3040"), "handle": Color("c4c4d6"), "glow": false, "door": true, "passable": true, "door_closed": METAL_DOOR, "hardness": 3.0},
+	BLAST_DOOR:      {"name": "Blast Door", "item": "blast_door", "style": "door",      "base": Color("4a4e6b"), "accent": Color("23283a"), "handle": Color("ff3a3a"), "glow": false, "door": true, "door_open": BLAST_DOOR_OPEN, "hardness": 4.5},
+	BLAST_DOOR_OPEN: {"name": "Blast Door", "item": "blast_door", "style": "door_open", "base": Color("4a4e6b"), "accent": Color("23283a"), "handle": Color("ff3a3a"), "glow": false, "door": true, "passable": true, "door_closed": BLAST_DOOR, "hardness": 4.5},
 }
 
 func def(id: int) -> Variant:
 	return DEFS.get(id, null)
 
 func is_solid(id: int) -> bool:
-	return id != AIR and DEFS.has(id)
+	# passable tiles (an open door) exist in DEFS but don't collide
+	var d = DEFS.get(id)
+	return d != null and not d.get("passable", false)
+
+## Is this tile part of a door (closed or open)?
+func is_door(id: int) -> bool:
+	var d = DEFS.get(id)
+	return d != null and d.get("door", false)
+
+func is_passable(id: int) -> bool:
+	var d = DEFS.get(id)
+	return d != null and d.get("passable", false)
+
+## The paired state of a door tile (closed<->open); returns id unchanged if not a door.
+func door_toggle(id: int) -> int:
+	var d = DEFS.get(id)
+	if d == null:
+		return id
+	return d.get("door_open", d.get("door_closed", id))
 
 func is_glowing(id: int) -> bool:
 	var d = DEFS.get(id)

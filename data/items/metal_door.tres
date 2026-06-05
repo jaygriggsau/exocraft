@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_06yvy"]
+
+[resource]
+script = ExtResource("1_06yvy")
+id = "metal_door"
+display_name = "Metal Door"
+tier = 1
+category = "structure"
+stack_size = 99
+base_value = 18
+color = Color(0.6039216, 0.627451, 0.7529412, 1)
+place_tile = 22

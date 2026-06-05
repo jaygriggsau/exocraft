@@ -155,6 +155,66 @@ func _make_tile_image(id: int, variant: int) -> Image:
 			_rect(img, 0, 0, 1, TS, nc)
 			_rect(img, TS - 1, 0, 1, TS, nc)
 			img.set_pixel(TS / 2, TS / 2, nc.lightened(0.3))
+		"brick":
+			# Offset masonry: speckled base (already filled) + mortar joints.
+			var mortar := base.darkened(0.42)
+			var bh := 5
+			var bw := 8
+			var rowi := 0
+			for ry in range(0, TS, bh):
+				_rect(img, 0, ry, TS, 1, mortar)            # bed joint
+				var off := (bw / 2) if (rowi % 2 == 1) else 0
+				var jx := -off
+				while jx < TS:
+					if jx >= 0:
+						_rect(img, jx, ry, 1, bh, mortar)    # head joint
+					_rect(img, maxi(jx + 1, 0), ry + 1, mini(bw - 1, TS - jx - 1), 1, base.lightened(0.1))
+					jx += bw
+				rowi += 1
+		"panel":
+			# Riveted metal wall: two horizontal panels, seams + corner rivets.
+			var pc: Color = d.accent
+			_rect(img, 0, 0, TS, 1, pc.lightened(0.12))
+			_rect(img, 0, 0, 1, TS, pc.lightened(0.08))
+			_rect(img, TS - 1, 0, 1, TS, base.darkened(0.3))
+			_rect(img, 0, TS - 1, TS, 1, base.darkened(0.3))
+			_rect(img, 1, TS / 2, TS - 2, 1, base.darkened(0.26))   # mid seam
+			for ry in [2, TS / 2 + 2]:
+				img.set_pixel(2, ry, pc)
+				img.set_pixel(TS - 3, ry, pc)
+		"window":
+			# Solid but see-through: opaque frame + translucent glass + muntins.
+			img.fill(Color(0, 0, 0, 0))
+			var frame: Color = base
+			var glass: Color = d.accent
+			glass.a = 0.42
+			_rect(img, 2, 2, TS - 4, TS - 4, glass)
+			_rect(img, 0, 0, TS, 2, frame)
+			_rect(img, 0, TS - 2, TS, 2, frame)
+			_rect(img, 0, 0, 2, TS, frame)
+			_rect(img, TS - 2, 0, 2, TS, frame)
+			_rect(img, TS / 2 - 1, 2, 1, TS - 4, frame)            # muntins
+			_rect(img, 2, TS / 2 - 1, TS - 4, 1, frame)
+			_rect(img, 4, 4, 3, 1, Color(1, 1, 1, 0.5))            # glint
+		"door":
+			# A closed door leaf: framed border, recessed panels, a handle.
+			var dk: Color = d.accent
+			var handle: Color = d.get("handle", Color("d8c060"))
+			_rect(img, 0, 0, TS, TS, dk)
+			_rect(img, 1, 1, TS - 2, TS - 2, base)
+			_rect(img, 3, 2, TS - 6, 5, base.darkened(0.16))       # upper panel
+			_rect(img, 3, 9, TS - 6, 5, base.darkened(0.16))       # lower panel
+			_rect(img, 3, 2, TS - 6, 1, base.lightened(0.12))
+			_rect(img, 3, 9, TS - 6, 1, base.lightened(0.12))
+			img.set_pixel(3, TS / 2, handle)                        # handle
+			img.set_pixel(3, TS / 2 + 1, handle)
+		"door_open":
+			# An open doorway: just the swung leaf on one jamb, rest passable air.
+			img.fill(Color(0, 0, 0, 0))
+			_rect(img, 0, 0, 3, TS, base)
+			_rect(img, 0, 0, 3, 1, base.lightened(0.15))
+			_rect(img, 0, TS - 1, 3, 1, base.darkened(0.25))
+			img.set_pixel(2, TS / 2, d.get("handle", Color("d8c060")))
 		_:
 			# "block" / "soil": subtle depth shade, plus per-variant pebbles,
 			# cracks, mottling and an occasional embedded fleck so neighbouring
@@ -225,13 +285,18 @@ func _build_tileset() -> void:
 	occ.polygon = square
 
 	for id in Tiles.ids():
+		var dd = Tiles.def(id)
+		var passable: bool = dd.get("passable", false)          # open doors don't collide
+		var occlude: bool = not passable and not dd.get("no_occlude", false)  # windows let light through
 		for v in TILE_VARIANTS:
 			var coord := Vector2i(id, v)
 			src.create_tile(coord)
 			var td := src.get_tile_data(coord, 0)
-			td.add_collision_polygon(0)
-			td.set_collision_polygon_points(0, 0, square)
-			td.set_occluder(0, occ)
+			if not passable:
+				td.add_collision_polygon(0)
+				td.set_collision_polygon_points(0, 0, square)
+			if occlude:
+				td.set_occluder(0, occ)
 
 	tileset = ts
 

@@ -41,6 +41,11 @@ func _load_recipes() -> void:
 			var r: Recipe = load(RECIPE_DIR + "/" + f)
 			if r and r.output_item:
 				RECIPES.append(r)
+	# present the (long) recipe list as a progression: by tier, then name
+	RECIPES.sort_custom(func(a, b):
+		if a.output_item.tier != b.output_item.tier:
+			return a.output_item.tier < b.output_item.tier
+		return a.output_item.display_name < b.output_item.display_name)
 
 # ---------------------------------------------------------------------------
 # Item lookups

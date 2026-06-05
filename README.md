@@ -101,8 +101,20 @@ godot --path .
     that are never an input/end-item, and balance smells where a recipe needs an
     input of a *higher* tier than its output).
   - A tiered tree (tier 0→3): raw drops → refined → components → gear, gated by
-    **stations** (Workbench → Fabricator) and **unlock conditions**
-    (`tier>=N`, `crafted:<id>`). Costs/values rise with tier.
+    **stations** (Workbench → Fabricator → Synthesizer) and **unlock conditions**
+    (`tier>=N`, `crafted:<id>`). Costs/values rise with tier, and the fabricator
+    lists recipes **sorted by tier** so it reads as a progression.
+  - **Building set** — craft structures from the materials that make sense:
+    **walls** (Slate Brick, Metal Wall, Obsidite Brick, plus Bio-Timber / Hull
+    Plating / Neon Glass), **windows** (Glass + Reinforced — solid but
+    transparent, so light passes through them), and **functional doors** (Timber,
+    Metal, Blast). Doors are **two tiles tall** and **open/close when you click
+    them** (an open door is a passable doorway you can walk through; a closed one
+    is a solid, light-blocking wall). They're built from **sub-parts** — a Hinge
+    and a Metal Frame — that the recipes require.
+  - **Upgraded particle guns** that harvest faster: Particle Gun (1×) → **Pulse
+    Drill** (1.8×) → Plasma Cutter (3×) → **Singularity Bore** (4.5×), each a
+    real jump in mining speed against tougher blocks.
   - The fabricator shows three states per recipe — **locked** (with the reason,
     e.g. "needs Fabricator nearby"), **available** (unlocked, missing materials),
     and **craftable** — so the locked→craftable transition is the reward loop.

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_id43d"]
+
+[resource]
+script = ExtResource("1_id43d")
+id = "metal_wall"
+display_name = "Metal Wall"
+tier = 1
+category = "structure"
+base_value = 14
+color = Color(0.6039216, 0.627451, 0.7529412, 1)
+place_tile = 16

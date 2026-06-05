@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_dhtb1"]
+
+[resource]
+script = ExtResource("1_dhtb1")
+id = "obsidian_brick"
+display_name = "Obsidite Brick"
+tier = 2
+category = "structure"
+base_value = 18
+color = Color(0.24313726, 0.18039216, 0.32156864, 1)
+place_tile = 17

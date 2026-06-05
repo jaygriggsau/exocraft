@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_ypkyr"]
+
+[resource]
+script = ExtResource("1_ypkyr")
+id = "glass_window"
+display_name = "Glass Window"
+tier = 1
+category = "structure"
+base_value = 8
+color = Color(0.68235296, 0.9098039, 1, 1)
+place_tile = 18

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_cqkd5"]
+
+[resource]
+script = ExtResource("1_cqkd5")
+id = "blast_door"
+display_name = "Blast Door"
+tier = 2
+category = "structure"
+stack_size = 99
+base_value = 34
+color = Color(1, 0.3529412, 0.2901961, 1)
+place_tile = 24

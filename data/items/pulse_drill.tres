@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_uklgq"]
+
+[resource]
+script = ExtResource("1_uklgq")
+id = "pulse_drill"
+display_name = "Pulse Drill"
+tier = 2
+category = "tool"
+stack_size = 1
+base_value = 40
+stats = {
+"mining_power": 1.8
+}
+color = Color(0.49019608, 0.9411765, 1, 1)

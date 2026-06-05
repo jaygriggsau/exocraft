@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_2t85w"]
+
+[resource]
+script = ExtResource("1_2t85w")
+id = "reinforced_window"
+display_name = "Reinforced Window"
+tier = 2
+category = "structure"
+base_value = 20
+color = Color(0.7490196, 0.91764706, 1, 1)
+place_tile = 19

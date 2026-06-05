@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_j145k"]
+[ext_resource type="Resource" path="res://data/items/alloy_plate.tres" id="2_5coad"]
+[ext_resource type="Resource" path="res://data/items/crystal_lens.tres" id="3_knjkk"]
+[ext_resource type="Resource" path="res://data/items/power_cell.tres" id="4_mige3"]
+[ext_resource type="Resource" path="res://data/items/pulse_drill.tres" id="5_h6tgj"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_lupvl"]
+
+[sub_resource type="Resource" id="Resource_nx627"]
+script = ExtResource("1_j145k")
+item = ExtResource("2_5coad")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_kea8b"]
+script = ExtResource("1_j145k")
+item = ExtResource("3_knjkk")
+
+[sub_resource type="Resource" id="Resource_fqxbs"]
+script = ExtResource("1_j145k")
+item = ExtResource("4_mige3")
+
+[resource]
+script = ExtResource("6_lupvl")
+output_item = ExtResource("5_h6tgj")
+inputs = Array[ExtResource("1_j145k")]([SubResource("Resource_nx627"), SubResource("Resource_kea8b"), SubResource("Resource_fqxbs")])
+station = "fabricator"

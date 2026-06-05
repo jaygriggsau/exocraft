@@ -46,6 +46,23 @@ func _initialize() -> void:
 		["wood_block", "Bio-Timber", 0, "structure", 999, 3, "7c6b4e", T.WOOD, 0.0, {}],
 		["plasma_cutter", "Plasma Cutter", 3, "tool", 1, 60, "ffd23a", -1, 0.0, {"mining_power": 3.0}],
 		["quantum_blade", "Quantum Lance", 3, "weapon", 1, 120, "b06aff", -1, 0.0, {"damage": 30.0, "cooldown": 0.30, "speed": 420.0}],
+		# --- building sub-parts (the bits doors / windows need) ---
+		["frame", "Metal Frame", 1, "component", 999, 14, "9aa0c0", -1, 0.0, {}],
+		["hinge", "Hinge", 1, "component", 999, 6, "b8bcd0", -1, 0.0, {}],
+		# --- crafted walls ---
+		["stone_brick", "Slate Brick", 0, "structure", 999, 3, "555876", T.STONE_BRICK, 0.0, {}],
+		["metal_wall", "Metal Wall", 1, "structure", 999, 14, "9aa0c0", T.METAL_WALL, 0.0, {}],
+		["obsidian_brick", "Obsidite Brick", 2, "structure", 999, 18, "3e2e52", T.OBSIDIAN_BRICK, 0.0, {}],
+		# --- windows (transparent) ---
+		["glass_window", "Glass Window", 1, "structure", 999, 8, "aee8ff", T.GLASS_WINDOW, 0.0, {}],
+		["reinforced_window", "Reinforced Window", 2, "structure", 999, 20, "bfeaff", T.REINFORCED_WINDOW, 0.0, {}],
+		# --- doors (place the closed tile; open / close in-world) ---
+		["wood_door", "Timber Door", 1, "structure", 99, 8, "6b4f34", T.WOOD_DOOR, 0.0, {}],
+		["metal_door", "Metal Door", 1, "structure", 99, 18, "9aa0c0", T.METAL_DOOR, 0.0, {}],
+		["blast_door", "Blast Door", 2, "structure", 99, 34, "ff5a4a", T.BLAST_DOOR, 0.0, {}],
+		# --- upgraded particle guns (harvest faster) ---
+		["pulse_drill", "Pulse Drill", 2, "tool", 1, 40, "7df0ff", -1, 0.0, {"mining_power": 1.8}],
+		["singularity_bore", "Singularity Bore", 3, "tool", 1, 140, "b06aff", -1, 0.0, {"mining_power": 4.5}],
 		# --- stations + storage (deployed in the world) ---
 		["storage_pod", "Storage Pod", 1, "structure", 1, 30, "6fd0e0", -1, 0.0, {}],
 		["workbench", "Workbench", 0, "structure", 1, 20, "b89060", -1, 0.0, {}],
@@ -98,6 +115,23 @@ func _initialize() -> void:
 		["nanocore", 1, [["circuit_board", 1], ["power_cell", 1], ["exotic_matter", 1]], "synthesizer", "tier>=3"],
 		["plasma_cutter", 1, [["composite", 1], ["circuit_board", 2], ["exotic_matter", 1]], "synthesizer", "tier>=3"],
 		["quantum_blade", 1, [["nanocore", 1], ["composite", 2], ["exotic_matter", 2]], "synthesizer", "tier>=3"],
+		# building sub-parts
+		["frame", 1, [["metal_ingot", 2]], "workbench", ""],
+		["hinge", 2, [["metal_ingot", 1]], "workbench", ""],
+		# walls
+		["stone_brick", 4, [["stone", 4]], "workbench", ""],
+		["metal_wall", 4, [["metal_ingot", 2]], "workbench", ""],
+		["obsidian_brick", 4, [["darkrock", 4]], "fabricator", ""],
+		# windows
+		["glass_window", 2, [["glass_pane", 2]], "workbench", ""],
+		["reinforced_window", 2, [["glass_pane", 2], ["frame", 1]], "fabricator", ""],
+		# doors (need hinges; tougher doors need frames/plate)
+		["wood_door", 1, [["wood", 6], ["hinge", 2]], "workbench", ""],
+		["metal_door", 1, [["metal_wall", 2], ["frame", 1], ["hinge", 2]], "workbench", ""],
+		["blast_door", 1, [["alloy_plate", 2], ["frame", 1], ["hinge", 2]], "fabricator", ""],
+		# upgraded particle guns
+		["pulse_drill", 1, [["alloy_plate", 2], ["crystal_lens", 1], ["power_cell", 1]], "fabricator", ""],
+		["singularity_bore", 1, [["nanocore", 1], ["composite", 2], ["exotic_matter", 3]], "synthesizer", "tier>=3"],
 	]
 
 	for d in recipes:

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_gjrja"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="2_c61i4"]
+[ext_resource type="Resource" path="res://data/items/frame.tres" id="3_0qqbi"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="4_ytauf"]
+
+[sub_resource type="Resource" id="Resource_xh8tw"]
+script = ExtResource("1_gjrja")
+item = ExtResource("2_c61i4")
+quantity = 2
+
+[resource]
+script = ExtResource("4_ytauf")
+output_item = ExtResource("3_0qqbi")
+inputs = Array[ExtResource("1_gjrja")]([SubResource("Resource_xh8tw")])
+station = "workbench"

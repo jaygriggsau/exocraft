@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_l0woa"]
+
+[resource]
+script = ExtResource("1_l0woa")
+id = "frame"
+display_name = "Metal Frame"
+tier = 1
+category = "component"
+base_value = 14
+color = Color(0.6039216, 0.627451, 0.7529412, 1)

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_wk1n8"]
+
+[resource]
+script = ExtResource("1_wk1n8")
+id = "stone_brick"
+display_name = "Slate Brick"
+category = "structure"
+base_value = 3
+color = Color(0.33333334, 0.34509805, 0.4627451, 1)
+place_tile = 15
