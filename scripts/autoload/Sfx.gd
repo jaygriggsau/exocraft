@@ -22,6 +22,8 @@ func _ready() -> void:
 	_sounds["deploy"] = _make(200, 760, 0.24, "sin", 7.0, 0.05)
 	_sounds["hit"] = _make(150, 90, 0.14, "sq", 26.0, 0.3)
 	_sounds["pickup"] = _make(640, 1040, 0.08, "sin", 16.0, 0.0)
+	_sounds["gunshot"] = _make(320, 70, 0.09, "sq", 34.0, 0.7)    # sharp ballistic crack
+	_sounds["slash"] = _make(1300, 360, 0.13, "sin", 16.0, 0.18)  # energy-blade whoosh
 
 	for i in POOL:
 		var p := AudioStreamPlayer.new()

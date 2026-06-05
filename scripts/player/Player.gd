@@ -462,21 +462,72 @@ func _try_fire(item_id: String) -> void:
 	if _fire_cd > 0.0:
 		return
 	var it := ItemDB.get_item(item_id)
+	if it.stats.has("melee"):
+		_try_melee(it)
+		return
 	var dmg: float = it.stats.get("damage", 10.0)
 	var spd: float = it.stats.get("speed", 320.0)
 	var cd: float = it.stats.get("cooldown", 0.25)
+	var spread: float = it.stats.get("spread", 0.0)
+	var style: String = it.stats.get("projectile", "bolt")
 	var dir := (get_global_mouse_position() - global_position)
 	if dir.length() < 1.0:
 		dir = Vector2(facing, 0)
 	dir = dir.normalized()
+	if spread > 0.0:
+		dir = dir.rotated(randf_range(-spread, spread))   # ballistic scatter
 	var p := Projectile.new()
-	p.setup(global_position + dir * 10.0, dir, dmg, spd, true)
-	Sfx.play("shoot")
+	p.setup(global_position + dir * 10.0, dir, dmg, spd, true, style)
+	Sfx.play("gunshot" if style == "bullet" else "shoot")
 	Game.world.add_child(p)
 	_fire_cd = cd
 	# kickback + muzzle flash
 	_recoil += -dir * FIRE_KICK
 	_spawn_muzzle_flash(dir * 11.0, it.color, 0.5)
+
+## Melee swing (lightsaber): cleave every creature in a short arc in front of
+## the player and slice apart incoming enemy bolts, with a glowing slash.
+func _try_melee(it: Item) -> void:
+	var reach: float = it.stats.get("reach", 30.0)
+	var dmg: float = it.stats.get("damage", 20.0)
+	var cd: float = it.stats.get("cooldown", 0.35)
+	var dir := (get_global_mouse_position() - global_position)
+	if dir.length() < 1.0:
+		dir = Vector2(facing, 0)
+	dir = dir.normalized()
+	var center := global_position + dir * reach * 0.6
+	for e in get_tree().get_nodes_in_group("creatures"):
+		if is_instance_valid(e) and e.has_method("take_damage") \
+				and center.distance_to(e.global_position) <= reach:
+			e.take_damage(dmg)
+	for pr in get_tree().get_nodes_in_group("enemy_projectiles"):
+		if is_instance_valid(pr) and center.distance_to(pr.global_position) <= reach:
+			pr.queue_free()                       # deflect/slice incoming fire
+	_spawn_slash(dir, reach, it.color)
+	Sfx.play("slash")
+	_fire_cd = cd
+	_recoil += dir * 2.5                          # tiny forward lunge
+
+func _spawn_slash(dir: Vector2, reach: float, color: Color) -> void:
+	var s := Sprite2D.new()
+	s.texture = Art.sprite("slash")
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	s.modulate = color
+	s.global_position = global_position + dir * reach * 0.5
+	s.rotation = dir.angle()
+	var sc := reach / 11.0
+	s.scale = Vector2(sc, sc)
+	var l := PointLight2D.new()
+	l.texture = Art.light_texture()
+	l.color = color
+	l.energy = 1.4
+	l.scale = Vector2(0.45, 0.45)
+	s.add_child(l)
+	Game.world.add_child(s)
+	var tw := s.create_tween()
+	tw.tween_property(s, "scale", s.scale * 1.45, 0.16)
+	tw.parallel().tween_property(s, "modulate:a", 0.0, 0.16)
+	tw.tween_callback(s.queue_free)
 
 func _mining_power() -> float:
 	var it := ItemDB.get_item(inv.selected_id())

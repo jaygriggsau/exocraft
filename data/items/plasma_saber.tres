@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_mevmg"]
+
+[resource]
+script = ExtResource("1_mevmg")
+id = "plasma_saber"
+display_name = "Plasma Saber"
+tier = 2
+category = "weapon"
+stack_size = 1
+base_value = 90
+stats = {
+"cooldown": 0.35,
+"damage": 26.0,
+"melee": true,
+"reach": 34.0
+}
+color = Color(0.22352941, 1, 0.62352943, 1)

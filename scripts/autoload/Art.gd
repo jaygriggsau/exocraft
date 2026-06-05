@@ -333,6 +333,27 @@ func _make_item_icon(item_id: String) -> Image:
 			_rect(img, 11, 6, 2, 2, c)
 			_rect(img, 4, 9, 3, 4, Color("3a3e5b"))
 			img.set_pixel(12, 6, c.lightened(0.4))
+		"slug_rifle":
+			# Side-on ballistic rifle: long barrel, stock, magazine.
+			_rect(img, 1, 7, 12, 2, Color("3a3e5b"))    # receiver/barrel
+			_rect(img, 13, 7, 2, 2, Color("6f74a0"))    # muzzle
+			_rect(img, 2, 6, 7, 1, Color("555a7a"))     # top rail
+			_rect(img, 2, 9, 3, 3, Color("2a2e45"))     # grip
+			_rect(img, 6, 9, 3, 3, Color("4a4e6b"))     # magazine
+			img.set_pixel(14, 7, c.lightened(0.5))
+		"plasma_saber":
+			# A hilt with a glowing energy blade angled up-right.
+			_rect(img, 2, 11, 4, 3, Color("9aa0b4"))    # hilt
+			_rect(img, 3, 10, 2, 1, Color("d6dae6"))
+			img.set_pixel(5, 13, c)                     # emitter
+			for i in 10:                                 # blade
+				var bx := 6 + i
+				var by := 11 - i
+				if bx < TS and by >= 0:
+					img.set_pixel(bx, by, c)
+					if bx + 1 < TS:
+						img.set_pixel(bx + 1, by, c.lightened(0.55))
+			img.set_pixel(6, 11, Color.WHITE)
 		"med_cell":
 			# Vial with a cross.
 			_rect(img, 5, 3, 6, 10, Color("203040"))
@@ -364,6 +385,8 @@ func _build_sprites() -> void:
 	_sprites["synthesizer"] = ImageTexture.create_from_image(_make_synthesizer())
 	_sprites["storage_pod"] = ImageTexture.create_from_image(_make_pod())
 	_sprites["bolt"] = ImageTexture.create_from_image(_make_bolt())
+	_sprites["bullet"] = ImageTexture.create_from_image(_make_bullet())
+	_sprites["slash"] = ImageTexture.create_from_image(_make_slash())
 	_sprites["star"] = ImageTexture.create_from_image(_make_starfield())
 	_sprites["sun"] = ImageTexture.create_from_image(_make_disc(Color("ffe8a8"), Color("ff9a3a")))
 	_sprites["moon"] = ImageTexture.create_from_image(_make_disc(Color("dfe6ff"), Color("8f9ad0")))
@@ -678,6 +701,35 @@ func _make_bolt() -> Image:
 				img.set_pixel(x, y, c)
 	img.set_pixel(2, 2, Color.WHITE)
 	img.set_pixel(3, 2, Color.WHITE)
+	return img
+
+func _make_bullet() -> Image:
+	# A small fast kinetic tracer: bright core with a short hot tail.
+	var img := _new_image(8, 4)
+	_rect(img, 0, 1, 8, 2, Color(1.0, 0.85, 0.4, 0.55))   # tail
+	_rect(img, 4, 1, 4, 2, Color("ffd86a"))               # slug
+	_rect(img, 6, 1, 2, 2, Color.WHITE)                   # hot tip
+	return img
+
+func _make_slash() -> Image:
+	# A crescent energy arc, opening toward +x so it rotates to the swing dir.
+	# Drawn white so a saber's colour can tint it via modulate.
+	var S := 24
+	var img := _new_image(S, S)
+	var c := S / 2.0 - 0.5
+	for y in S:
+		for x in S:
+			var dx := x - c
+			var dy := y - c
+			var r := sqrt(dx * dx + dy * dy)
+			if r < 6.5 or r > 11.0:
+				continue
+			var ang: float = abs(atan2(dy, dx))
+			if ang > 1.25:
+				continue
+			var edge: float = 1.0 - absf(r - 8.75) / 2.25     # fade across the band
+			var taper := 1.0 - ang / 1.25                      # fade toward the tips
+			img.set_pixel(x, y, Color(1, 1, 1, clampf(edge * taper, 0.0, 1.0)))
 	return img
 
 func _make_starfield() -> Image:

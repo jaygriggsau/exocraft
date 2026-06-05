@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_uw81g"]
+
+[resource]
+script = ExtResource("1_uw81g")
+id = "slug_rifle"
+display_name = "Kinetic Rifle"
+tier = 2
+category = "weapon"
+stack_size = 1
+base_value = 70
+stats = {
+"cooldown": 0.1,
+"damage": 7.0,
+"projectile": "bullet",
+"speed": 760.0,
+"spread": 0.06
+}
+color = Color(0.84705883, 0.8235294, 0.7529412, 1)

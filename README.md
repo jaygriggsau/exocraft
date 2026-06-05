@@ -42,6 +42,11 @@ godot --path .
 - **Plasma Drill** (tool) – mine the tile under the cursor
 - **Hydro Cell** (tool) – pour liquid into the cell under the cursor
 - **Ion Blaster** (weapon) – fire an energy bolt toward the cursor
+- **Kinetic Rifle** (weapon) – a real ballistic gun: hold to auto-fire fast,
+  slightly-scattered tracer bullets
+- **Plasma Saber** (weapon) – a lightsaber-style melee blade: click to swing a
+  glowing arc that cleaves every creature in front of you and slices apart
+  incoming enemy bolts
 - **Block** – place it under the cursor (needs an adjacent solid tile)
 - **Med-Cell** (consumable) – restore health
 
@@ -158,7 +163,8 @@ godot --path .
 - **Animated fauna**: every creature has runtime-generated frames too — walk
   cycles for the legged animals, a hop for hoppers, swaying tentacles for
   floaters, and a scanning eye/thrusters for drones.
-- **Combat**: blaster projectiles, player health, invuln frames, death + respawn.
+- **Combat**: ranged energy bolts + ballistic bullets, a melee saber that cleaves
+  and deflects bolts, player health, invuln frames, death + respawn.
 - **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
   enemies) for relaxed building.
 - **Settings menu** (pause → Settings): graphics (fullscreen, VSync, window
