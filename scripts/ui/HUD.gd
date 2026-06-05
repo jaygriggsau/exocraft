@@ -39,6 +39,7 @@ var _tip_label: Label
 var _vig_mat: ShaderMaterial
 var _pause_panel: Control
 var _pause_dim: ColorRect
+var _pause_box: Panel
 var _pause_title: Label
 var _pause_buttons := []
 var _settings_panel: Control
@@ -141,10 +142,12 @@ func _layout() -> void:
 	_vig.size = s
 	_scan.size = s
 	_pause_dim.size = s
-	_pause_title.size.x = s.x
-	_pause_title.position = Vector2(0, s.y / 2.0 - 170)
+	var pb := (s - _pause_box.size) / 2.0
+	_pause_box.position = pb
+	_pause_title.size.x = _pause_box.size.x
+	_pause_title.position = pb + Vector2(0, 36)
 	for j in _pause_buttons.size():
-		_pause_buttons[j].position = Vector2(s.x / 2.0 - 130, s.y / 2.0 - 90 + j * 60)
+		_pause_buttons[j].position = pb + Vector2((_pause_box.size.x - 260) / 2.0, 120 + j * 58)
 	if _settings_dim:
 		_settings_dim.size = s
 		_settings_box.position = (s - _settings_box.size) / 2.0
@@ -193,7 +196,7 @@ func _process(_dt: float) -> void:
 	if _inv_panel.visible:
 		# recipe states depend on which station you're standing near, so refresh live
 		for row in _craft_rows:
-			_style_recipe(row.button, row.recipe)
+			_style_recipe(row)
 		if _open_pod and (Game.player == null or not is_instance_valid(_open_pod) \
 				or _open_pod.global_position.distance_to(Game.player.global_position) > World.STORAGE_RANGE):
 			_open_pod = null
@@ -554,7 +557,7 @@ func _build_crafting() -> void:
 	_craft_panel = Control.new()
 	_craft_panel.visible = false
 	add_child_control(_craft_panel)
-	var w := 380
+	var w := 412
 	var h := 520
 	_craft_size = Vector2(w + 32, h + 60)
 	var bg := Panel.new()
@@ -574,25 +577,33 @@ func _build_crafting() -> void:
 	_craft_panel.add_child(scroll)
 	var vbox := VBoxContainer.new()
 	vbox.custom_minimum_size = Vector2(w - 14, 0)
-	vbox.add_theme_constant_override("separation", 5)
+	vbox.add_theme_constant_override("separation", 6)
 	scroll.add_child(vbox)
 	for i in ItemDB.RECIPES.size():
 		var r: Recipe = ItemDB.RECIPES[i]
+		# each recipe is a roomy two-line row: icon + output name, then ingredients
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(w - 16, 38)
-		b.add_theme_font_size_override("font_size", 13)
-		b.clip_text = true
+		b.custom_minimum_size = Vector2(w - 16, 54)
 		b.pressed.connect(_on_craft.bind(r))
 		vbox.add_child(b)
-		_craft_rows.append({"button": b, "recipe": r})
-
-func _recipe_text(r: Recipe) -> String:
-	var out := "%s x%d  <=  " % [r.output_item.display_name, r.output_quantity]
-	var parts := []
-	for inp in r.inputs:
-		if inp.item:
-			parts.append("%dx %s" % [inp.quantity, inp.item.display_name])
-	return out + ", ".join(parts)
+		var icon := TextureRect.new()
+		icon.texture = Art.item_icon(r.output_item.id)
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.position = Vector2(9, 9)
+		icon.size = Vector2(36, 36)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(icon)
+		var name_lbl := _make_label("", 16)
+		name_lbl.position = Vector2(54, 6)
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(name_lbl)
+		var ing_lbl := _make_label("", 12)
+		ing_lbl.position = Vector2(54, 31)
+		ing_lbl.size = Vector2(w - 70, 18)
+		ing_lbl.clip_text = true
+		ing_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(ing_lbl)
+		_craft_rows.append({"button": b, "name": name_lbl, "ing": ing_lbl, "recipe": r})
 
 func _build_pod_panel() -> void:
 	_pod_panel = Control.new()
@@ -652,7 +663,11 @@ func _build_pause() -> void:
 	_pause_dim.color = Color(0.02, 0.02, 0.05, 0.7)
 	_pause_dim.position = Vector2.ZERO
 	_pause_panel.add_child(_pause_dim)
-	_pause_title = _make_label("PAUSED", 44)
+	_pause_box = Panel.new()                       # matching cyberpunk framed box
+	_pause_box.add_theme_stylebox_override("panel", _panel_sb())
+	_pause_box.size = Vector2(320, 320)
+	_pause_panel.add_child(_pause_box)
+	_pause_title = _make_label("PAUSED", 40)
 	_pause_title.modulate = Color("2dffff")
 	_pause_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pause_panel.add_child(_pause_title)
@@ -979,27 +994,46 @@ func _refresh() -> void:
 	for i in Inventory.SIZE:
 		_fill_slot(_inv_slots[i], Game.inventory.slots[i], false)
 	for row in _craft_rows:
-		_style_recipe(row.button, row.recipe)
+		_style_recipe(row)
 	if _open_pod and is_instance_valid(_open_pod):
 		_refresh_pod()
 	var sid := Game.inventory.selected_id()
 	_sel_label.text = ItemDB.name_of(sid) if sid != "" else ""
 
-func _style_recipe(b: Button, r: Recipe) -> void:
-	# three visible states create the locked -> craftable reward arc
+func _style_recipe(row: Dictionary) -> void:
+	# three visible states create the locked -> craftable reward arc, while the
+	# row stays legible in every state (icon + bold name + clear ingredient line)
+	var r: Recipe = row.recipe
+	var b: Button = row.button
+	var nm: Label = row.name
+	var ing: Label = row.ing
+	nm.text = "%s  x%d" % [r.output_item.display_name, r.output_quantity] if r.output_quantity > 1 \
+		else r.output_item.display_name
+	var parts := []
+	for inp in r.inputs:
+		if inp.item:
+			var have: int = ItemDB.available_count(inp.item.id)
+			parts.append("%d/%d %s" % [mini(have, inp.quantity), inp.quantity, inp.item.display_name])
+	var ingredients := "    ".join(parts)
 	match ItemDB.recipe_state(r):
 		ItemDB.CRAFTABLE:
 			b.disabled = false
 			b.modulate = Color(1, 1, 1, 1)
-			b.text = _recipe_text(r)
+			nm.modulate = Color("eafffb")
+			ing.text = ingredients
+			ing.modulate = Color("7dffb0")          # green: ready to build
 		ItemDB.AVAILABLE:
 			b.disabled = true
-			b.modulate = Color(1, 1, 1, 0.85)
-			b.text = _recipe_text(r)
+			b.modulate = Color(1, 1, 1, 0.95)
+			nm.modulate = Color("cfe6ff")
+			ing.text = ingredients
+			ing.modulate = Color("ffb070")          # amber: short on materials
 		_:  # LOCKED
 			b.disabled = true
-			b.modulate = Color(0.55, 0.6, 0.72, 0.6)
-			b.text = "[" + ItemDB.lock_reason(r) + "]  " + _recipe_text(r)
+			b.modulate = Color(1, 1, 1, 0.95)
+			nm.modulate = Color(0.66, 0.72, 0.85)
+			ing.text = ItemDB.lock_reason(r)
+			ing.modulate = Color(0.74, 0.62, 0.92)  # violet: requirement hint
 
 func _fill_slot(s: Dictionary, stack, selected: bool) -> void:
 	s.panel.add_theme_stylebox_override("panel", _select_sb if selected else _normal_sb)
