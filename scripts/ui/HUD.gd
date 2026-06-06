@@ -234,20 +234,51 @@ func _update_vignette() -> void:
 
 func _update_tooltip() -> void:
 	_tip.visible = false
-	if not _inv_panel.visible or Game.inventory == null:
-		return
 	var mp: Vector2 = _root.get_global_mouse_position()
-	for i in Inventory.SIZE:
-		var s: Dictionary = _inv_slots[i]
-		if s.panel.get_global_rect().has_point(mp):
-			var stack = Game.inventory.slots[i]
-			if stack != null:
-				var nm := ItemDB.name_of(stack.id)
-				_tip_label.text = "%s   x%d" % [nm, stack.count] if stack.count > 1 else nm
-				_tip.size = Vector2(_tip_label.get_minimum_size().x + 16, 26)
-				_tip.position = mp + Vector2(16, 16)
-				_tip.visible = true
-			return
+	# cargo / hotbar item names
+	if _inv_panel.visible and Game.inventory != null:
+		for i in Inventory.SIZE:
+			var s: Dictionary = _inv_slots[i]
+			if s.panel.get_global_rect().has_point(mp):
+				var stack = Game.inventory.slots[i]
+				if stack != null:
+					var nm := ItemDB.name_of(stack.id)
+					_show_tip("%s   x%d" % [nm, stack.count] if stack.count > 1 else nm, mp)
+				return
+	# fabricator recipe details (the grid only shows icons)
+	if _craft_panel.visible:
+		for row in _craft_rows:
+			if row.button.get_global_rect().has_point(mp):
+				_show_tip(_recipe_tip_text(row.recipe), mp)
+				return
+
+func _show_tip(text: String, mp: Vector2) -> void:
+	_tip_label.text = text
+	var sz := _tip_label.get_minimum_size()
+	_tip.size = sz + Vector2(16, 8)
+	# keep the tip on-screen (it can be tall for recipes)
+	var pos := mp + Vector2(16, 16)
+	var screen := _root.size
+	pos.x = minf(pos.x, screen.x - _tip.size.x - 4)
+	pos.y = minf(pos.y, screen.y - _tip.size.y - 4)
+	_tip.position = pos
+	_tip.visible = true
+
+func _recipe_tip_text(r: Recipe) -> String:
+	var head := r.output_item.display_name
+	if r.output_quantity > 1:
+		head += "  x%d" % r.output_quantity
+	var lines := [head]
+	for inp in r.inputs:
+		if inp.item:
+			var have: int = ItemDB.available_count(inp.item.id)
+			var mark := "" if have >= inp.quantity else "  (need more)"
+			lines.append("  %d/%d %s%s" % [mini(have, inp.quantity), inp.quantity, inp.item.display_name, mark])
+	match ItemDB.recipe_state(r):
+		ItemDB.CRAFTABLE: lines.append("click to craft")
+		ItemDB.AVAILABLE: lines.append("short on materials")
+		_: lines.append(ItemDB.lock_reason(r))
+	return "\n".join(lines)
 
 func _biome_name(b: int) -> String:
 	match b:
@@ -559,9 +590,13 @@ func _build_crafting() -> void:
 	_craft_panel.visible = false
 	_craft_panel.z_index = 19        # above the map (18)
 	add_child_control(_craft_panel)
-	var w := 412
-	var h := 520
-	_craft_size = Vector2(w + 32, h + 60)
+	var cell := 46
+	var gap := 4
+	var cols := 6
+	var grid_w := cols * cell + (cols - 1) * gap
+	var rows_vis := 6                 # rows shown before the list scrolls
+	var grid_h := rows_vis * cell + (rows_vis - 1) * gap
+	_craft_size = Vector2(grid_w + 18 + 32, grid_h + 48 + 18)
 	var bg := Panel.new()
 	bg.add_theme_stylebox_override("panel", _panel_sb())
 	bg.position = Vector2.ZERO
@@ -574,38 +609,33 @@ func _build_crafting() -> void:
 	_craft_panel.add_child(title)
 	var scroll := ScrollContainer.new()
 	scroll.position = Vector2(16, 48)
-	scroll.size = Vector2(w, h)
+	scroll.size = Vector2(grid_w + 16, grid_h)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_craft_panel.add_child(scroll)
-	var vbox := VBoxContainer.new()
-	vbox.custom_minimum_size = Vector2(w - 14, 0)
-	vbox.add_theme_constant_override("separation", 6)
-	scroll.add_child(vbox)
+	var grid := GridContainer.new()
+	grid.columns = cols
+	grid.add_theme_constant_override("h_separation", gap)
+	grid.add_theme_constant_override("v_separation", gap)
+	scroll.add_child(grid)
 	for i in ItemDB.RECIPES.size():
 		var r: Recipe = ItemDB.RECIPES[i]
-		# each recipe is a roomy two-line row: icon + output name, then ingredients
+		# one compact cell per recipe: just the output icon (hover for details)
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(w - 16, 54)
+		b.custom_minimum_size = Vector2(cell, cell)
 		b.pressed.connect(_on_craft.bind(r))
-		vbox.add_child(b)
+		grid.add_child(b)
 		var icon := TextureRect.new()
 		icon.texture = Art.item_icon(r.output_item.id)
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.position = Vector2(9, 9)
-		icon.size = Vector2(36, 36)
+		icon.position = Vector2(7, 7)
+		icon.size = Vector2(cell - 14, cell - 14)
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.add_child(icon)
-		var name_lbl := _make_label("", 16)
-		name_lbl.position = Vector2(54, 6)
-		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.add_child(name_lbl)
-		var ing_lbl := _make_label("", 12)
-		ing_lbl.position = Vector2(54, 31)
-		ing_lbl.size = Vector2(w - 70, 18)
-		ing_lbl.clip_text = true
-		ing_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.add_child(ing_lbl)
-		_craft_rows.append({"button": b, "name": name_lbl, "ing": ing_lbl, "recipe": r})
+		var qty := _make_label("", 12)
+		qty.position = Vector2(cell - 18, cell - 18)
+		qty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(qty)
+		_craft_rows.append({"button": b, "icon": icon, "qty": qty, "recipe": r})
 
 func _build_pod_panel() -> void:
 	_pod_panel = Control.new()
@@ -1004,39 +1034,26 @@ func _refresh() -> void:
 	_sel_label.text = ItemDB.name_of(sid) if sid != "" else ""
 
 func _style_recipe(row: Dictionary) -> void:
-	# three visible states create the locked -> craftable reward arc, while the
-	# row stays legible in every state (icon + bold name + clear ingredient line)
+	# Minecraft-style recipe cell: a bright icon when craftable, faded when you're
+	# short on materials, dark when still locked. Details live in the hover tip.
 	var r: Recipe = row.recipe
 	var b: Button = row.button
-	var nm: Label = row.name
-	var ing: Label = row.ing
-	nm.text = "%s  x%d" % [r.output_item.display_name, r.output_quantity] if r.output_quantity > 1 \
-		else r.output_item.display_name
-	var parts := []
-	for inp in r.inputs:
-		if inp.item:
-			var have: int = ItemDB.available_count(inp.item.id)
-			parts.append("%d/%d %s" % [mini(have, inp.quantity), inp.quantity, inp.item.display_name])
-	var ingredients := "    ".join(parts)
+	var icon: TextureRect = row.icon
+	var qty: Label = row.qty
+	qty.text = "x%d" % r.output_quantity if r.output_quantity > 1 else ""
 	match ItemDB.recipe_state(r):
 		ItemDB.CRAFTABLE:
 			b.disabled = false
-			b.modulate = Color(1, 1, 1, 1)
-			nm.modulate = Color("eafffb")
-			ing.text = ingredients
-			ing.modulate = Color("7dffb0")          # green: ready to build
+			icon.modulate = Color(1, 1, 1, 1)
+			qty.modulate = Color("eafffb")
 		ItemDB.AVAILABLE:
 			b.disabled = true
-			b.modulate = Color(1, 1, 1, 0.95)
-			nm.modulate = Color("cfe6ff")
-			ing.text = ingredients
-			ing.modulate = Color("ffb070")          # amber: short on materials
+			icon.modulate = Color(1, 1, 1, 0.5)        # faded: short on materials
+			qty.modulate = Color(1, 1, 1, 0.6)
 		_:  # LOCKED
 			b.disabled = true
-			b.modulate = Color(1, 1, 1, 0.95)
-			nm.modulate = Color(0.66, 0.72, 0.85)
-			ing.text = ItemDB.lock_reason(r)
-			ing.modulate = Color(0.74, 0.62, 0.92)  # violet: requirement hint
+			icon.modulate = Color(0.34, 0.4, 0.52, 0.65)  # dark: requirement not met
+			qty.modulate = Color(0.34, 0.4, 0.52, 0.65)
 
 func _fill_slot(s: Dictionary, stack, selected: bool) -> void:
 	s.panel.add_theme_stylebox_override("panel", _select_sb if selected else _normal_sb)

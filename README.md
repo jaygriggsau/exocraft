@@ -120,9 +120,11 @@ godot --path .
   - **Upgraded particle guns** that harvest faster: Particle Gun (1×) → **Pulse
     Drill** (1.8×) → Plasma Cutter (3×) → **Singularity Bore** (4.5×), each a
     real jump in mining speed against tougher blocks.
-  - The fabricator shows three states per recipe — **locked** (with the reason,
-    e.g. "needs Fabricator nearby"), **available** (unlocked, missing materials),
-    and **craftable** — so the locked→craftable transition is the reward loop.
+  - The fabricator is a **Minecraft-style recipe grid** of output icons; hovering
+    a cell shows the name, ingredients (have/need) and status. Three states are
+    read at a glance from the icon — **craftable** (bright, clickable), **available**
+    (faded, missing materials) and **locked** (dark, with the reason in the tip) —
+    so the locked→craftable transition is the reward loop.
   - **Deployable stations**: craft a **Workbench**, **Fabricator** or
     **Synthesizer** and place it in the world (it builds up from a seed-pod with
     an animation); you must stand near the right station to craft its recipes.
