@@ -14,7 +14,7 @@ func _initialize() -> void:
 	var items := [
 		# --- raw (gathered from the world) ---
 		["scrap", "Alien Scrap", 0, "raw", 999, 2, "ff8a3a", -1, 0.0, {}],
-		["dirt", "Regolith", 0, "raw", 999, 1, "564470", T.DIRT, 0.0, {}],
+		["dirt", "Regolith", 0, "raw", 999, 1, "8975ac", T.DIRT, 0.0, {}],
 		["stone", "Slate", 0, "raw", 999, 1, "43465e", T.STONE, 0.0, {}],
 		["sand", "Glass-Sand", 0, "raw", 999, 1, "d9c27a", T.SAND, 0.0, {}],
 		["wood", "Xylo-Timber", 0, "raw", 999, 2, "9a7a52", -1, 0.0, {}],

@@ -47,9 +47,9 @@ const BLAST_DOOR_OPEN := 25
 ##              (a hardness-1 block ~= 0.35s with the basic Particle Gun; ranges
 ##              from soft sand ~0.5 up to the deep Exotic vein ~8.0)
 var DEFS := {
-	DIRT:    {"name": "Regolith",     "item": "dirt",        "style": "soil",    "base": Color("3b2f4a"), "accent": Color("564470"), "glow": false, "hardness": 0.7},
+	DIRT:    {"name": "Regolith",     "item": "dirt",        "style": "soil",    "base": Color("5c4c70"), "accent": Color("8975ac"), "glow": false, "hardness": 0.7},
 	STONE:   {"name": "Slate",        "item": "stone",       "style": "block",   "base": Color("2e2f3e"), "accent": Color("43465e"), "glow": false, "hardness": 1.8},
-	GRASS:   {"name": "Bio-Turf",     "item": "dirt",        "style": "grass",   "base": Color("3b2f4a"), "accent": Color("564470"), "top": Color("2bf0a0"), "glow": false, "hardness": 0.7},
+	GRASS:   {"name": "Bio-Turf",     "item": "dirt",        "style": "grass",   "base": Color("5c4c70"), "accent": Color("8975ac"), "top": Color("2bf0a0"), "glow": false, "hardness": 0.7},
 	ICE:     {"name": "Cryo-Ice",     "item": "ice",         "style": "block",   "base": Color("8fd6ef"), "accent": Color("d6f4ff"), "glow": false, "hardness": 1.2},
 	JUNGLE:  {"name": "Spore-Turf",   "item": "biomass",     "style": "grass",   "base": Color("33402a"), "accent": Color("48562f"), "top": Color("a6ff3a"), "glow": false, "hardness": 0.7},
 	SAND:    {"name": "Glass-Sand",   "item": "sand",        "style": "block",   "base": Color("d9c27a"), "accent": Color("efe0a8"), "glow": false, "hardness": 0.5},
