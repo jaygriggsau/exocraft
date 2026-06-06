@@ -530,6 +530,7 @@ func _build_selected_label() -> void:
 func _build_inventory() -> void:
 	_inv_panel = Control.new()
 	_inv_panel.visible = false
+	_inv_panel.z_index = 19          # sit above the map (18) so the menu is never hidden behind it
 	add_child_control(_inv_panel)
 	var cols := Inventory.HOTBAR
 	var rows := int(ceil(float(Inventory.SIZE) / cols))
@@ -556,6 +557,7 @@ func _build_inventory() -> void:
 func _build_crafting() -> void:
 	_craft_panel = Control.new()
 	_craft_panel.visible = false
+	_craft_panel.z_index = 19        # above the map (18)
 	add_child_control(_craft_panel)
 	var w := 412
 	var h := 520
@@ -608,6 +610,7 @@ func _build_crafting() -> void:
 func _build_pod_panel() -> void:
 	_pod_panel = Control.new()
 	_pod_panel.visible = false
+	_pod_panel.z_index = 19          # above the map (18)
 	add_child_control(_pod_panel)
 	var cols := 6
 	var rows := int(ceil(float(StoragePod.SIZE) / cols))
