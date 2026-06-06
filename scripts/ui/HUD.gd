@@ -179,7 +179,7 @@ func _process(_dt: float) -> void:
 		var depth: int = t.y - Game.world.surface_height(t.x)
 		var biome := _biome_name(Game.world.biome_at(t.x))
 		_info_label.text = "%s    depth %d" % [biome, maxi(0, depth)]
-	_clock_label.text = "Day %d  %s  %s" % [Game.day_count, Game.clock_string(), Game.day_phase()]
+	_clock_label.text = "Day %d  %s  %s  ·  %s" % [Game.day_count, Game.clock_string(), Game.day_phase(), Game.weather]
 	_update_kin_label()
 	_peaceful_label.visible = not Game.enemies_enabled
 	_update_vignette()

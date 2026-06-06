@@ -13,6 +13,10 @@ func _ready() -> void:
 	daynight.name = "DayNight"
 	add_child(daynight)
 
+	var weather := Weather.new()
+	weather.name = "Weather"
+	add_child(weather)
+
 	var world := World.new()
 	world.name = "World"
 	add_child(world)

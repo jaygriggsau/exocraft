@@ -387,6 +387,8 @@ func _build_sprites() -> void:
 	_sprites["bolt"] = ImageTexture.create_from_image(_make_bolt())
 	_sprites["bullet"] = ImageTexture.create_from_image(_make_bullet())
 	_sprites["slash"] = ImageTexture.create_from_image(_make_slash())
+	_sprites["clouds"] = ImageTexture.create_from_image(_make_clouds())
+	_sprites["rain"] = ImageTexture.create_from_image(_make_raindrop())
 	_sprites["star"] = ImageTexture.create_from_image(_make_starfield())
 	_sprites["sun"] = ImageTexture.create_from_image(_make_disc(Color("ffe8a8"), Color("ff9a3a")))
 	_sprites["moon"] = ImageTexture.create_from_image(_make_disc(Color("dfe6ff"), Color("8f9ad0")))
@@ -710,6 +712,49 @@ func _make_bullet() -> Image:
 	_rect(img, 4, 1, 4, 2, Color("ffd86a"))               # slug
 	_rect(img, 6, 1, 2, 2, Color.WHITE)                   # hot tip
 	return img
+
+func _make_raindrop() -> Image:
+	# A thin vertical streak, brighter at the bottom (pale alien cyan).
+	var img := _new_image(2, 12)
+	for y in 12:
+		var a := 0.18 + 0.5 * (float(y) / 11.0)
+		var col := Color(0.66, 0.92, 1.0, a)
+		img.set_pixel(0, y, col)
+		img.set_pixel(1, y, col)
+	return img
+
+func _make_clouds() -> Image:
+	# A wide, horizontally-tileable band of soft puffy clouds, drawn white so the
+	# weather system can tint them (light haze -> dark storm) via modulate.
+	var W := 2048
+	var H := 300
+	var img := _new_image(W, H)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7777
+	for c in 22:
+		var cx := rng.randi_range(0, W)
+		var cy := rng.randi_range(70, H - 70)
+		for p in rng.randi_range(5, 10):
+			var px := cx + rng.randi_range(-90, 90)
+			var py := cy + rng.randi_range(-26, 26)
+			_cloud_blob(img, px, py, rng.randi_range(26, 60), rng.randf_range(0.12, 0.22), W)
+	return img
+
+func _cloud_blob(img: Image, cx: int, cy: int, r: int, peak: float, w: int) -> void:
+	var h := img.get_height()
+	for dy in range(-r, r + 1):
+		var py := cy + dy
+		if py < 0 or py >= h:
+			continue
+		for dx in range(-r, r + 1):
+			var d := sqrt(float(dx * dx + dy * dy))
+			if d > r:
+				continue
+			var f := 1.0 - d / float(r)
+			var a := peak * f * f                       # soft falloff
+			var px := posmod(cx + dx, w)                # wrap for seamless tiling
+			var cur := img.get_pixel(px, py)
+			img.set_pixel(px, py, Color(1, 1, 1, minf(1.0, cur.a + a)))
 
 func _make_slash() -> Image:
 	# A crescent energy arc, opening toward +x so it rotates to the swing dir.

@@ -27,6 +27,7 @@ var ui_blocking := false   ## true while a full-screen panel (inventory) is open
 
 var time_of_day := 0.30    ## 0..1, 0 = midnight, 0.5 = noon (driven by DayNight)
 var day_count := 1
+var weather := "Clear"     ## current weather label (driven by Weather)
 var enemies_enabled := true ## peaceful mode toggle
 
 var crafted := {}          ## ids of recipes/stations ever crafted (gates unlocks)

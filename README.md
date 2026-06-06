@@ -199,6 +199,11 @@ godot --path .
   - Streamed **point lights**: a shadow-casting player headlamp, glowing ore /
     neon blocks (lit per chunk near the player), blaster bolts and drone eyes.
   - Neon **bloom** via a `WorldEnvironment` + HDR 2D (Forward+/Mobile).
+- **Dynamic weather** (`Weather.gd`): a clear → cloudy → storm state machine.
+  Drifting, wind-blown **clouds** that thicken and darken as a storm builds,
+  **rain** (particles, shown only while you're near the surface), and alien
+  **green lightning** — a jagged bolt + double-flicker screen flash + thunder.
+  The current weather shows in the HUD clock readout.
 
 ## Project layout
 
