@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_t3k5g"]
+
+[resource]
+script = ExtResource("1_t3k5g")
+id = "ration"
+display_name = "Protein Ration"
+tier = 1
+category = "food"
+stack_size = 20
+base_value = 6
+stats = {
+"food": 45.0
+}
+color = Color(0.78431374, 0.9098039, 0.47843137, 1)

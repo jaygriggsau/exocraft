@@ -7,6 +7,11 @@ const SPEED := 120.0
 const SPRINT_MULT := 1.7
 const REGEN_DELAY := 4.0            # seconds out of combat before health regens
 const REGEN_RATE := 7.0            # health per second
+const HUNGER_DRAIN := 0.45         # hunger lost per second at rest
+const HUNGER_SPRINT := 1.9         # drain multiplier while sprinting
+const WELL_FED := 30.0             # hunger needed for health to regenerate
+const STARVE_DMG := 2.5            # health/sec lost while starving (hunger 0)
+const STARVE_FLOOR := 20.0         # starvation won't drop you below this health
 const ACCEL := 1400.0
 const FRICTION := 1600.0
 const JUMP_VELOCITY := -270.0
@@ -114,9 +119,15 @@ func _physics_process(dt: float) -> void:
 	_fire_cd = maxf(0.0, _fire_cd - dt)
 	_invuln = maxf(0.0, _invuln - dt)
 
-	# regenerate health when out of combat
+	# hunger drains over time (faster while sprinting); empty hunger starves you,
+	# and you only regenerate health while reasonably well fed
+	var sprinting := Input.is_action_pressed("sprint") and absf(velocity.x) > 8.0
+	Game.add_hunger(-HUNGER_DRAIN * (HUNGER_SPRINT if sprinting else 1.0) * dt)
+
 	_no_dmg += dt
-	if _no_dmg >= REGEN_DELAY and Game.health < Game.max_health:
+	if Game.hunger <= 0.0 and Game.health > STARVE_FLOOR:
+		Game.damage_player(STARVE_DMG * dt)      # starvation
+	elif _no_dmg >= REGEN_DELAY and Game.hunger >= WELL_FED and Game.health < Game.max_health:
 		Game.heal_player(REGEN_RATE * dt)
 
 	# submerged? liquid slows you and makes you buoyant (swim with Jump)
@@ -560,11 +571,19 @@ func _try_consume(item_id: String) -> void:
 	if _place_cd > 0.0:
 		return
 	var it := ItemDB.get_item(item_id)
-	if Game.health >= Game.max_health or it.heal <= 0.0:
+	var food: float = it.stats.get("food", 0.0)
+	# skip if it would do nothing right now (full health and full hunger)
+	var can_heal := it.heal > 0.0 and Game.health < Game.max_health
+	var can_feed := food > 0.0 and Game.hunger < Game.max_hunger
+	if not can_heal and not can_feed:
 		return
-	Game.heal_player(it.heal)
+	if food > 0.0:
+		Game.feed_player(food)
+	if it.heal > 0.0:
+		Game.heal_player(it.heal)
 	inv.consume_selected(1)
-	_place_cd = 0.4
+	Sfx.play("pickup")
+	_place_cd = 0.5
 
 # ---------------------------------------------------------------------------
 func take_damage(amount: float) -> void:
@@ -580,6 +599,7 @@ func take_damage(amount: float) -> void:
 
 func _on_died() -> void:
 	Game.reset_health()
+	Game.reset_hunger()
 	global_position = Vector2(0, (Game.world.surface_tile_y(0) - 4) * World.TILE)
 	velocity = Vector2.ZERO
 

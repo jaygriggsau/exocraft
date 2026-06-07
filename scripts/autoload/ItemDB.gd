@@ -84,7 +84,7 @@ func type_of(id: String) -> int:
 		return BLOCK
 	if it.stats.has("damage"):
 		return WEAPON
-	if it.heal > 0.0:
+	if it.heal > 0.0 or it.stats.has("food"):
 		return CONSUMABLE
 	if it.category == "tool" or it.stats.has("mining_power"):
 		return TOOL

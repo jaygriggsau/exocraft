@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_0nrsu"]
+
+[resource]
+script = ExtResource("1_0nrsu")
+id = "nutrient_stew"
+display_name = "Nutrient Stew"
+tier = 2
+category = "food"
+stack_size = 10
+base_value = 16
+stats = {
+"food": 85.0
+}
+color = Color(1, 0.6039216, 0.3529412, 1)
+heal = 25.0

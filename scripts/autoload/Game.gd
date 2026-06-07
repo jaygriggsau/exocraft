@@ -7,6 +7,7 @@ extends Node
 
 signal inventory_changed
 signal health_changed(current: float, maximum: float)
+signal hunger_changed(current: float, maximum: float)
 signal player_died
 signal enemies_toggled(enabled: bool)
 signal alien_rep_changed(rep: float, friendly: bool)
@@ -21,6 +22,9 @@ var environment: Environment = null   ## the WorldEnvironment's Environment (for
 
 var max_health := 100.0
 var health := 100.0
+
+var max_hunger := 100.0
+var hunger := 100.0
 
 var world_seed := 0
 var ui_blocking := false   ## true while a full-screen panel (inventory) is open
@@ -79,6 +83,19 @@ func heal_player(amount: float) -> void:
 
 func reset_health() -> void:
 	set_health(max_health)
+
+func set_hunger(v: float) -> void:
+	hunger = clampf(v, 0.0, max_hunger)
+	hunger_changed.emit(hunger, max_hunger)
+
+func add_hunger(amount: float) -> void:
+	set_hunger(hunger + amount)
+
+func feed_player(amount: float) -> void:
+	set_hunger(hunger + amount)
+
+func reset_hunger() -> void:
+	set_hunger(max_hunger)
 
 func set_enemies_enabled(v: bool) -> void:
 	enemies_enabled = v

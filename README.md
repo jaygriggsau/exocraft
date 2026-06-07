@@ -167,6 +167,10 @@ godot --path .
   floaters, and a scanning eye/thrusters for drones.
 - **Combat**: ranged energy bolts + ballistic bullets, a melee saber that cleaves
   and deflects bolts, player health, invuln frames, death + respawn.
+- **Hunger & food**: a hunger bar that drains over time (faster while sprinting);
+  staying fed lets health regenerate, while an empty stomach starves you (down to
+  a floor). Eat craftable food — **Protein Ration** and **Nutrient Stew** (which
+  also heals) — to refill it.
 - **Peaceful mode**: press `P` to toggle enemy spawning off (and clear current
   enemies) for relaxed building.
 - **Settings menu** (pause → Settings): graphics (fullscreen, VSync, window

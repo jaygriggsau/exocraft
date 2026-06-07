@@ -43,6 +43,9 @@ func _initialize() -> void:
 		["slug_rifle", "Kinetic Rifle", 2, "weapon", 1, 70, "d8d2c0", -1, 0.0, {"damage": 7.0, "cooldown": 0.10, "speed": 760.0, "spread": 0.06, "projectile": "bullet"}],
 		["plasma_saber", "Plasma Saber", 2, "weapon", 1, 90, "39ff9f", -1, 0.0, {"melee": true, "damage": 26.0, "cooldown": 0.35, "reach": 34.0}],
 		["med_cell", "Med-Cell", 2, "component", 20, 8, "39ff88", -1, 40.0, {}],
+		# --- food (restores hunger; stew also heals a little) ---
+		["ration", "Protein Ration", 1, "food", 20, 6, "c8e87a", -1, 0.0, {"food": 45.0}],
+		["nutrient_stew", "Nutrient Stew", 2, "food", 10, 16, "ff9a5a", -1, 25.0, {"food": 85.0}],
 		["plating", "Hull Plating", 2, "structure", 999, 12, "7a80b0", T.PLATING, 0.0, {}],
 		["neon_glass", "Neon Glass", 2, "structure", 999, 10, "ff2bd6", T.NEON, 0.0, {}],
 		["wood_block", "Bio-Timber", 0, "structure", 999, 3, "7c6b4e", T.WOOD, 0.0, {}],
@@ -112,6 +115,8 @@ func _initialize() -> void:
 		["plating", 2, [["alloy_plate", 1]], "fabricator", ""],
 		["neon_glass", 4, [["glass_pane", 2], ["power_cell", 1]], "fabricator", ""],
 		["med_cell", 1, [["biomass", 4], ["crystal", 1]], "fabricator", ""],
+		["ration", 2, [["biomass", 3]], "workbench", ""],
+		["nutrient_stew", 1, [["biomass", 4], ["ration", 1]], "fabricator", ""],
 		["blaster", 1, [["circuit_board", 1], ["conduit", 1], ["power_cell", 1]], "fabricator", ""],
 		["slug_rifle", 1, [["alloy_plate", 2], ["circuit_board", 1], ["conduit", 1]], "fabricator", ""],
 		["plasma_saber", 1, [["crystal_lens", 1], ["power_cell", 1], ["alloy_plate", 1]], "fabricator", ""],

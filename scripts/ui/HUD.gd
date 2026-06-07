@@ -13,6 +13,8 @@ var _panel_tex: ImageTexture       # generated cyberpunk panel background
 var _root: Control
 var _hp_fill: ColorRect
 var _hp_label: Label
+var _food_fill: ColorRect
+var _food_label: Label
 var _info_label: Label
 var _kin_label: Label
 var _hint: Label
@@ -120,10 +122,12 @@ func _ready() -> void:
 
 	Game.inventory_changed.connect(_refresh)
 	Game.health_changed.connect(_on_health)
+	Game.hunger_changed.connect(_on_hunger)
 	Game.player_died.connect(_on_death)
 	call_deferred("_refresh")
 	call_deferred("_layout")
 	_on_health(Game.health, Game.max_health)
+	_on_hunger(Game.hunger, Game.max_hunger)
 
 func _layout() -> void:
 	var s := _root.size
@@ -519,14 +523,30 @@ func _build_health() -> void:
 	_hp_label.position = Vector2(26, 21)
 	add_child_control(_hp_label)
 
+	# hunger bar (a thinner amber bar directly below health)
+	var fbg := Panel.new()
+	fbg.add_theme_stylebox_override("panel", _sb(Color(0.02, 0.03, 0.06, 0.7), Color("ffae3a"), 1))
+	fbg.position = Vector2(18, 48)
+	fbg.size = Vector2(300, 18)
+	fbg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child_control(fbg)
+	_food_fill = ColorRect.new()
+	_food_fill.color = Color("ffae3a")
+	_food_fill.position = Vector2(21, 51)
+	_food_fill.size = Vector2(294, 12)
+	add_child_control(_food_fill)
+	_food_label = _make_label("Food 100", 12)
+	_food_label.position = Vector2(26, 50)
+	add_child_control(_food_label)
+
 func _build_info() -> void:
 	_info_label = _make_label("NEON WASTES", 16)
 	_info_label.modulate = Color("9fb0ff")
-	_info_label.position = Vector2(18, 52)
+	_info_label.position = Vector2(18, 72)
 	add_child_control(_info_label)
 
 	_kin_label = _make_label("", 14)
-	_kin_label.position = Vector2(18, 74)
+	_kin_label.position = Vector2(18, 94)
 	_kin_label.visible = false
 	add_child_control(_kin_label)
 
@@ -1068,6 +1088,13 @@ func _on_health(cur: float, maximum: float) -> void:
 	if _hp_fill:
 		_hp_fill.size.x = 294.0 * (cur / maximum)
 		_hp_label.text = "%d / %d" % [int(round(cur)), int(round(maximum))]
+
+func _on_hunger(cur: float, maximum: float) -> void:
+	if _food_fill:
+		_food_fill.size.x = 294.0 * (cur / maximum)
+		# warn (red) when starving, normal amber otherwise
+		_food_fill.color = Color("ff5a4a") if cur <= 20.0 else Color("ffae3a")
+		_food_label.text = "Food %d" % int(round(cur))
 
 func _on_death() -> void:
 	_death_label.visible = true

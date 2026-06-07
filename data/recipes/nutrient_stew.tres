@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_cnulf"]
+[ext_resource type="Resource" path="res://data/items/biomass.tres" id="2_b74v3"]
+[ext_resource type="Resource" path="res://data/items/ration.tres" id="3_5bd2l"]
+[ext_resource type="Resource" path="res://data/items/nutrient_stew.tres" id="4_7d78d"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_yv7bx"]
+
+[sub_resource type="Resource" id="Resource_0rjkg"]
+script = ExtResource("1_cnulf")
+item = ExtResource("2_b74v3")
+quantity = 4
+
+[sub_resource type="Resource" id="Resource_xikwy"]
+script = ExtResource("1_cnulf")
+item = ExtResource("3_5bd2l")
+
+[resource]
+script = ExtResource("5_yv7bx")
+output_item = ExtResource("4_7d78d")
+inputs = Array[ExtResource("1_cnulf")]([SubResource("Resource_0rjkg"), SubResource("Resource_xikwy")])
+station = "fabricator"
