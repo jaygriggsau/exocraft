@@ -14,7 +14,7 @@ const MOON_MAX := 0.40
 const SUN_SHADOWS := true
 
 # tunable palette ----------------------------------------------------------
-const AMBIENT_NIGHT := Color(0.10, 0.12, 0.20)
+const AMBIENT_NIGHT := Color(0.035, 0.04, 0.075)   # deep dark night (use a torch!)
 const AMBIENT_DAY := Color(0.42, 0.45, 0.52)
 const SKY_TOP_NIGHT := Color(0.02, 0.02, 0.06)
 const SKY_TOP_DAY := Color(0.10, 0.22, 0.44)

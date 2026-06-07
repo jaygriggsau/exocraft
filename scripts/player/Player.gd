@@ -35,6 +35,7 @@ const DRAIN_RATE := 0.6            # liquid sucked up per mine tick
 var inv: Inventory
 var sprite: AnimatedSprite2D
 var fx: MiningFX
+var _torch: PointLight2D
 var facing := 1
 var _anim := ""
 var _recoil := Vector2.ZERO
@@ -77,22 +78,23 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()
 
-	# shadow-casting headlamp so caves and night are explorable
-	var lamp := PointLight2D.new()
-	lamp.texture = Art.light_texture()
-	lamp.color = Color(1.0, 0.96, 0.86)
-	lamp.energy = 1.05
-	lamp.scale = Vector2(1.25, 1.25)
-	lamp.shadow_enabled = true
-	lamp.shadow_filter = Light2D.SHADOW_FILTER_PCF5
-	lamp.position = Vector2(0, -6)
-	add_child(lamp)
-	# soft personal glow that ignores walls, so the player is always visible
+	# a toggleable torch (key T): a warm, shadow-casting glow ~4 blocks across
+	# with a soft fade. Off by default-ish? No — on, but you can douse it.
+	_torch = PointLight2D.new()
+	_torch.texture = Art.light_texture()
+	_torch.color = Color(1.0, 0.82, 0.5)
+	_torch.energy = 1.25
+	_torch.scale = Vector2(0.7, 0.7)            # ~90px radius (~4 blocks lit, fading out)
+	_torch.shadow_enabled = true
+	_torch.shadow_filter = Light2D.SHADOW_FILTER_PCF5
+	_torch.position = Vector2(0, -6)
+	add_child(_torch)
+	# a faint personal glow that ignores walls, so you're never pitch-invisible
 	var aura := PointLight2D.new()
 	aura.texture = Art.light_texture()
-	aura.color = Color(0.6, 0.8, 1.0)
-	aura.energy = 0.5
-	aura.scale = Vector2(0.45, 0.45)
+	aura.color = Color(0.55, 0.72, 1.0)
+	aura.energy = 0.35
+	aura.scale = Vector2(0.3, 0.3)
 	add_child(aura)
 
 	# the particle-gun mining effect lives in world space
@@ -118,6 +120,9 @@ func _physics_process(dt: float) -> void:
 	_door_cd = maxf(0.0, _door_cd - dt)
 	_fire_cd = maxf(0.0, _fire_cd - dt)
 	_invuln = maxf(0.0, _invuln - dt)
+
+	if Input.is_action_just_pressed("torch"):
+		_torch.visible = not _torch.visible
 
 	# hunger drains over time (faster while sprinting); empty hunger starves you,
 	# and you only regenerate health while reasonably well fed

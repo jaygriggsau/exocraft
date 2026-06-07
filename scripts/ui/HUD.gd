@@ -550,7 +550,7 @@ func _build_info() -> void:
 	_kin_label.visible = false
 	add_child_control(_kin_label)
 
-	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  M map  •  P peaceful  •  Esc pause", 13)
+	_hint = _make_label("Move WAD  •  L-Click use/deploy  •  R-Click mine/dismantle  •  1-0/Scroll hotbar  •  E inventory  •  F storage pod  •  T torch  •  M map  •  P peaceful  •  Esc pause", 13)
 	_hint.modulate = Color(0.7, 0.75, 0.9, 0.8)
 	add_child_control(_hint)
 

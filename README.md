@@ -190,19 +190,21 @@ godot --path .
 - **Fog of war**: a corner **minimap** and a toggleable **fullscreen map** (`M`)
   that reveal as you explore (unexplored areas stay dark), with biome-coloured
   terrain, a player marker and deployed station/pod markers — plus an in-world
-  **black fog** that fully hides unexplored underground (above ground stays
-  clear), clearing in a vision circle around the player as you explore.
+  **black fog** that hides unexplored underground (above ground stays clear).
+  The fog **fades softly** at its edges (graded opacity levels) rather than a hard
+  cut, both at the explored frontier and as it fades in below the surface.
 - **Responsive UI**: a fully anchored HUD that lays out correctly on any
   resolution / aspect ratio (1080p, 1440p, 4K, ultrawide), with a large
   zoomed-in view and chunky pixel UI.
 - **Day/night cycle + dynamic lighting** (high-end):
   - A timed sun and moon arc across a **shader sky** that transitions
     dawn → day → dusk → night, with a cyberpunk-magenta twilight glow and stars
-    that fade in at night.
+    that fade in at night. **Nights are genuinely dark** — bring a light.
   - A `CanvasModulate` ambient floor plus `DirectionalLight2D` sun/moon that
     **cast real shadows** off the terrain — surfaces are sunlit while caves stay
     dark.
-  - Streamed **point lights**: a shadow-casting player headlamp, glowing ore /
+  - Streamed **point lights**: a **toggleable torch** (`T`) — a warm,
+    shadow-casting glow ~4 blocks across that softly fades out — glowing ore /
     neon blocks (lit per chunk near the player), blaster bolts and drone eyes.
   - Neon **bloom** via a `WorldEnvironment` + HDR 2D (Forward+/Mobile).
 - **Dynamic weather** (`Weather.gd`): a clear → cloudy → storm state machine.

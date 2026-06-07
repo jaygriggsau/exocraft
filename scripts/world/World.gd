@@ -36,7 +36,7 @@ var _water := {}                    # Vector2i -> float fill (0..1); absent = dr
 var _water_active := {}             # Vector2i -> true (cells to simulate next step)
 var _watered_chunks := {}           # Vector2i -> true (natural water already seeded)
 var _water_accum := 0.0
-var _explored := {}                 # Vector2i tile -> true (revealed)
+var _fog := {}                      # Vector2i tile -> fog level (-1 cleared .. FOG_LEVELS-1 solid)
 var _mapped := {}                   # Vector2i tile -> true (revealed on the minimap)
 var _last_reveal := Vector2i(999999, 999999)
 var chunks := {}                    # Vector2i -> PackedInt32Array
@@ -139,7 +139,8 @@ func _physics_process(dt: float) -> void:
 	_last_center = center
 	_stream(center)
 
-const REVEAL_RADIUS := 3        ## in-world black-fog vision radius (kept tighter than the view)
+const REVEAL_CLEAR := 3         ## tiles fully cleared of fog around the player
+const REVEAL_FADE := 4          ## extra tiles over which the fog fades back to solid
 const MAP_RADIUS := 26          ## how far the minimap reveals around the player
 
 # ---------------------------------------------------------------------------
@@ -350,23 +351,47 @@ func _seed_water_chunk(cc: Vector2i) -> void:
 				_water_active[Vector2i(tx, ty)] = true
 
 func _reveal_around(c: Vector2i) -> void:
-	# clear the in-world fog within a circle of the player (underground only)
-	for dy in range(-REVEAL_RADIUS, REVEAL_RADIUS + 1):
-		for dx in range(-REVEAL_RADIUS, REVEAL_RADIUS + 1):
-			if dx * dx + dy * dy > REVEAL_RADIUS * REVEAL_RADIUS:
+	# burn the in-world fog away in a soft circle around the player: fully clear
+	# within REVEAL_CLEAR, then graded back to solid over REVEAL_FADE tiles
+	var r := REVEAL_CLEAR + REVEAL_FADE
+	for dy in range(-r, r + 1):
+		for dx in range(-r, r + 1):
+			var d2 := dx * dx + dy * dy
+			if d2 > r * r:
 				continue
 			var t := Vector2i(c.x + dx, c.y + dy)
-			if _explored.has(t):
-				continue
 			if t.y <= surface_height(t.x) + 2:
 				continue
-			_explored[t] = true
-			fog_map.erase_cell(t)
+			var d := sqrt(float(d2))
+			var target := -1
+			if d > REVEAL_CLEAR:
+				var f := (d - REVEAL_CLEAR) / float(REVEAL_FADE)   # 0..1 across the ring
+				target = clampi(int(floor(f * Art.FOG_LEVELS)), 0, Art.FOG_LEVELS - 1)
+			if target < _fog_level(t):                              # only ever clear, never re-fog
+				_fog[t] = target
+				_apply_fog(t)
 	# reveal a wider area on the minimap (everywhere, stays revealed)
 	for dy in range(-MAP_RADIUS, MAP_RADIUS + 1):
 		for dx in range(-MAP_RADIUS, MAP_RADIUS + 1):
 			if dx * dx + dy * dy <= MAP_RADIUS * MAP_RADIUS:
 				_mapped[Vector2i(c.x + dx, c.y + dy)] = true
+
+## Fog level for a tile: a stored (revealed) value, else the default that fades
+## in from the surface ceiling so the top edge of the fog isn't a hard line.
+func _fog_level(t: Vector2i) -> int:
+	if _fog.has(t):
+		return _fog[t]
+	var top := surface_height(t.x) + 3
+	if t.y < top:
+		return -1
+	return clampi(t.y - top, 0, Art.FOG_LEVELS - 1)
+
+func _apply_fog(t: Vector2i) -> void:
+	var lvl := _fog_level(t)
+	if lvl < 0:
+		fog_map.erase_cell(t)
+	else:
+		fog_map.set_cell(t, Art.fog_source_id, Art.fog_atlas_coords(lvl))
 
 func is_explored(t: Vector2i) -> bool:
 	return _mapped.has(t)
@@ -387,10 +412,10 @@ func _fog_chunk(cc: Vector2i) -> void:
 			if ty < fog_top:
 				continue
 			var t := Vector2i(tx, ty)
-			if _explored.has(t):
-				continue
-			var v: int = absi(tx * 49297 + ty * 233) % Art.FOG_VARIANTS
-			fog_map.set_cell(t, Art.fog_source_id, Art.fog_atlas_coords(v))
+			# stored level if revealed, else fade in from the ceiling
+			var lvl: int = _fog.get(t, clampi(ty - fog_top, 0, Art.FOG_LEVELS - 1))
+			if lvl >= 0:
+				fog_map.set_cell(t, Art.fog_source_id, Art.fog_atlas_coords(lvl))
 
 func _unfog_chunk(cc: Vector2i) -> void:
 	var ox := cc.x * CHUNK

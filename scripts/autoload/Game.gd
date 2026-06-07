@@ -59,6 +59,7 @@ func _setup_input() -> void:
 	_add_action("sprint", [KEY_SHIFT])
 	_add_action("interact", [KEY_F])   # open a nearby storage pod
 	_add_action("map", [KEY_M])        # toggle the fullscreen map
+	_add_action("torch", [KEY_T])      # toggle the player's torch
 
 func _add_action(name: String, keys: Array) -> void:
 	if InputMap.has_action(name):

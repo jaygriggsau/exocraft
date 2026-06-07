@@ -21,7 +21,7 @@ var decor_tileset: TileSet
 var decor_source_id := 0
 var fog_tileset: TileSet
 var fog_source_id := 0
-const FOG_VARIANTS := 3
+const FOG_LEVELS := 5      ## fog opacity steps (0 = faintest .. FOG_LEVELS-1 = solid) for a soft edge
 var water_tileset: TileSet
 var water_source_id := 0
 const WATER_LEVELS := 8  ## fill-height steps for the liquid simulation render
@@ -983,28 +983,23 @@ func decor_atlas_coords(id: int) -> Vector2i:
 # ---------------------------------------------------------------------------
 # Fog of war (cloudy murk over unexplored underground; non-solid)
 # ---------------------------------------------------------------------------
-func _make_fog_image(v: int) -> Image:
-	# solid black fog of war: fully opaque so unexplored ground is hidden
+func _make_fog_image(level: int) -> Image:
+	# black fog of war at graded opacity, so the explored edge fades out instead
+	# of being a hard cut. level 0 = faintest, FOG_LEVELS-1 = fully opaque.
+	var op := lerpf(0.26, 1.0, float(level) / float(FOG_LEVELS - 1))
 	var img := _new_image(TS, TS)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 4000 + v
+	rng.seed = 4000 + level
 	for y in TS:
 		for x in TS:
-			var k := rng.randf_range(0.0, 0.025)   # near-black with faint grain
-			img.set_pixel(x, y, Color(k, k, k + 0.01, 1.0))
-	# a few barely-lighter wisps so it reads as fog, not a flat void
-	for c in 4:
-		var cx := rng.randi_range(1, TS - 3)
-		var cy := rng.randi_range(1, TS - 3)
-		for i in 4:
-			var px := clampi(cx + rng.randi_range(0, 2), 0, TS - 1)
-			var py := clampi(cy + rng.randi_range(0, 2), 0, TS - 1)
-			img.set_pixel(px, py, Color(0.05, 0.055, 0.07, 1.0))
+			var k := rng.randf_range(0.0, 0.025)            # near-black with faint grain
+			var a := clampf(op + rng.randf_range(-0.03, 0.03), 0.0, 1.0)
+			img.set_pixel(x, y, Color(k, k, k + 0.01, a))
 	return img
 
 func _build_fog_tileset() -> void:
-	var atlas := _new_image(FOG_VARIANTS * TS, TS)
-	for v in FOG_VARIANTS:
+	var atlas := _new_image(FOG_LEVELS * TS, TS)
+	for v in FOG_LEVELS:
 		atlas.blit_rect(_make_fog_image(v), Rect2i(0, 0, TS, TS), Vector2i(v * TS, 0))
 	var tex := ImageTexture.create_from_image(atlas)
 	var ts := TileSet.new()
@@ -1013,12 +1008,12 @@ func _build_fog_tileset() -> void:
 	src.texture = tex
 	src.texture_region_size = Vector2i(TS, TS)
 	fog_source_id = ts.add_source(src, 0)
-	for v in FOG_VARIANTS:
+	for v in FOG_LEVELS:
 		src.create_tile(Vector2i(v, 0))
 	fog_tileset = ts
 
-func fog_atlas_coords(v: int) -> Vector2i:
-	return Vector2i(v, 0)
+func fog_atlas_coords(level: int) -> Vector2i:
+	return Vector2i(level, 0)
 
 # ---------------------------------------------------------------------------
 # Liquid (translucent cyan coolant; rendered at WATER_LEVELS fill heights)
