@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_x74st"]
+
+[resource]
+script = ExtResource("1_x74st")
+id = "alloy_helm"
+display_name = "Alloy Helm"
+tier = 2
+category = "armor"
+stack_size = 1
+base_value = 28
+stats = {
+"armor": 10.0,
+"slot": "head"
+}
+color = Color(0.5411765, 0.5764706, 0.72156864, 1)

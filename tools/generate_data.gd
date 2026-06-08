@@ -68,6 +68,29 @@ func _initialize() -> void:
 		# --- upgraded particle guns (harvest faster) ---
 		["pulse_drill", "Pulse Drill", 2, "tool", 1, 40, "7df0ff", -1, 0.0, {"mining_power": 1.8}],
 		["singularity_bore", "Singularity Bore", 3, "tool", 1, 140, "b06aff", -1, 0.0, {"mining_power": 4.5}],
+		# --- more refined / components ---
+		["ceramic", "Ceramic Plate", 1, "refined", 999, 8, "d8cfc0", -1, 0.0, {}],
+		["servo", "Servo", 2, "component", 999, 18, "b0b6cc", -1, 0.0, {}],
+		# --- a scatter weapon + more sustenance ---
+		["scatter_gun", "Scatter Gun", 2, "weapon", 1, 75, "d8b070", -1, 0.0, {"damage": 5.0, "cooldown": 0.55, "speed": 600.0, "spread": 0.2, "pellets": 5, "projectile": "bullet"}],
+		["energy_bar", "Energy Bar", 1, "food", 20, 7, "ffd86a", -1, 12.0, {"food": 35.0}],
+		["stim_pack", "Stim-Pack", 2, "consumable", 10, 20, "ff5a8f", -1, 80.0, {}],
+		# --- armour (worn in head/body/legs slots; cuts incoming damage) ---
+		["scrap_helm", "Scrap Helm", 1, "armor", 1, 10, "9a8c78", -1, 0.0, {"armor": 6.0, "slot": "head"}],
+		["scrap_vest", "Scrap Vest", 1, "armor", 1, 16, "9a8c78", -1, 0.0, {"armor": 10.0, "slot": "body"}],
+		["scrap_greaves", "Scrap Greaves", 1, "armor", 1, 12, "9a8c78", -1, 0.0, {"armor": 7.0, "slot": "legs"}],
+		["alloy_helm", "Alloy Helm", 2, "armor", 1, 28, "8a93b8", -1, 0.0, {"armor": 10.0, "slot": "head"}],
+		["alloy_cuirass", "Alloy Cuirass", 2, "armor", 1, 44, "8a93b8", -1, 0.0, {"armor": 16.0, "slot": "body"}],
+		["alloy_greaves", "Alloy Greaves", 2, "armor", 1, 30, "8a93b8", -1, 0.0, {"armor": 11.0, "slot": "legs"}],
+		["exo_helm", "Exo Helm", 3, "armor", 1, 60, "b06aff", -1, 0.0, {"armor": 15.0, "slot": "head"}],
+		["exo_cuirass", "Exo Cuirass", 3, "armor", 1, 90, "b06aff", -1, 0.0, {"armor": 24.0, "slot": "body"}],
+		["exo_greaves", "Exo Greaves", 3, "armor", 1, 64, "b06aff", -1, 0.0, {"armor": 16.0, "slot": "legs"}],
+		# --- decor props (placeable; some glow) ---
+		["lamp_post", "Lamp Post", 1, "decor", 99, 10, "2dffff", T.LAMP_POST, 0.0, {}],
+		["crate", "Supply Crate", 0, "decor", 99, 5, "9a7a4a", T.CRATE, 0.0, {}],
+		["console", "Control Console", 2, "decor", 99, 24, "2dffff", T.CONSOLE, 0.0, {}],
+		["vat", "Bio-Vat", 2, "decor", 99, 22, "39ff9f", T.VAT, 0.0, {}],
+		["banner", "Banner", 1, "decor", 99, 6, "ff2bd6", T.BANNER, 0.0, {}],
 		# --- stations + storage (deployed in the world) ---
 		["storage_pod", "Storage Pod", 1, "structure", 1, 30, "6fd0e0", -1, 0.0, {}],
 		["workbench", "Workbench", 0, "structure", 1, 20, "b89060", -1, 0.0, {}],
@@ -141,6 +164,29 @@ func _initialize() -> void:
 		# upgraded particle guns
 		["pulse_drill", 1, [["alloy_plate", 2], ["crystal_lens", 1], ["power_cell", 1]], "fabricator", ""],
 		["singularity_bore", 1, [["nanocore", 1], ["composite", 2], ["exotic_matter", 3]], "synthesizer", "tier>=3"],
+		# refined / components
+		["ceramic", 2, [["sand", 2], ["stone", 1]], "workbench", ""],
+		["servo", 1, [["metal_ingot", 1], ["power_cell", 1]], "fabricator", ""],
+		# scatter weapon, food + medicine
+		["scatter_gun", 1, [["alloy_plate", 2], ["conduit", 1], ["metal_ingot", 2]], "fabricator", ""],
+		["energy_bar", 2, [["biomass", 2], ["polymer", 1]], "workbench", ""],
+		["stim_pack", 1, [["med_cell", 1], ["crystal", 1]], "fabricator", ""],
+		# armour sets
+		["scrap_helm", 1, [["scrap", 6], ["ceramic", 1]], "workbench", ""],
+		["scrap_vest", 1, [["scrap", 10], ["ceramic", 2]], "workbench", ""],
+		["scrap_greaves", 1, [["scrap", 8], ["ceramic", 1]], "workbench", ""],
+		["alloy_helm", 1, [["alloy_plate", 2], ["ceramic", 1]], "fabricator", ""],
+		["alloy_cuirass", 1, [["alloy_plate", 4], ["ceramic", 2]], "fabricator", ""],
+		["alloy_greaves", 1, [["alloy_plate", 3], ["ceramic", 1]], "fabricator", ""],
+		["exo_helm", 1, [["composite", 2], ["servo", 1], ["exotic_matter", 1]], "synthesizer", "tier>=3"],
+		["exo_cuirass", 1, [["composite", 3], ["servo", 2], ["exotic_matter", 2]], "synthesizer", "tier>=3"],
+		["exo_greaves", 1, [["composite", 2], ["servo", 1], ["exotic_matter", 1]], "synthesizer", "tier>=3"],
+		# decor props
+		["lamp_post", 1, [["metal_ingot", 1], ["glass_pane", 1]], "workbench", ""],
+		["crate", 2, [["wood", 3]], "workbench", ""],
+		["console", 1, [["alloy_plate", 1], ["circuit_board", 1]], "fabricator", ""],
+		["vat", 1, [["glass_pane", 2], ["metal_ingot", 1], ["biomass", 1]], "fabricator", ""],
+		["banner", 2, [["polymer", 2]], "workbench", ""],
 	]
 
 	for d in recipes:

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_h0p6e"]
+
+[resource]
+script = ExtResource("1_h0p6e")
+id = "scatter_gun"
+display_name = "Scatter Gun"
+tier = 2
+category = "weapon"
+stack_size = 1
+base_value = 75
+stats = {
+"cooldown": 0.55,
+"damage": 5.0,
+"pellets": 5,
+"projectile": "bullet",
+"speed": 600.0,
+"spread": 0.2
+}
+color = Color(0.84705883, 0.6901961, 0.4392157, 1)

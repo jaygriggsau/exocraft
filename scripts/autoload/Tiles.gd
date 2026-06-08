@@ -32,6 +32,12 @@ const METAL_DOOR := 22
 const METAL_DOOR_OPEN := 23
 const BLAST_DOOR := 24
 const BLAST_DOOR_OPEN := 25
+# --- decor props ---
+const LAMP_POST := 26
+const CRATE := 27
+const CONSOLE := 28
+const VAT := 29
+const BANNER := 30
 
 ## id -> definition dictionary.
 ## Fields:
@@ -75,6 +81,12 @@ var DEFS := {
 	METAL_DOOR_OPEN: {"name": "Metal Door", "item": "metal_door", "style": "door_open", "base": Color("5a6076"), "accent": Color("2a3040"), "handle": Color("c4c4d6"), "glow": false, "door": true, "passable": true, "door_closed": METAL_DOOR, "hardness": 3.0},
 	BLAST_DOOR:      {"name": "Blast Door", "item": "blast_door", "style": "door",      "base": Color("4a4e6b"), "accent": Color("23283a"), "handle": Color("ff3a3a"), "glow": false, "door": true, "door_open": BLAST_DOOR_OPEN, "hardness": 4.5},
 	BLAST_DOOR_OPEN: {"name": "Blast Door", "item": "blast_door", "style": "door_open", "base": Color("4a4e6b"), "accent": Color("23283a"), "handle": Color("ff3a3a"), "glow": false, "door": true, "passable": true, "door_closed": BLAST_DOOR, "hardness": 4.5},
+	# --- decor (furniture / props; some glow, some you can walk through) ---
+	LAMP_POST: {"name": "Lamp Post",       "item": "lamp_post", "style": "lamp",    "base": Color("4a4e6b"), "accent": Color("9fe8ff"), "glow": true, "light": Color("2dffff"), "light_energy": 1.0, "passable": true, "hardness": 0.8},
+	CRATE:     {"name": "Supply Crate",    "item": "crate",     "style": "crate",   "base": Color("7a5a3a"), "accent": Color("c0a060"), "glow": false, "hardness": 1.2},
+	CONSOLE:   {"name": "Control Console", "item": "console",   "style": "console", "base": Color("3a3e5b"), "accent": Color("2dffff"), "glow": true, "light": Color("2dffff"), "light_energy": 0.8, "hardness": 2.0},
+	VAT:       {"name": "Bio-Vat",         "item": "vat",       "style": "vat",     "base": Color("4a4e6b"), "accent": Color("39ff9f"), "glow": true, "light": Color("39ff9f"), "light_energy": 1.0, "hardness": 2.0},
+	BANNER:    {"name": "Banner",          "item": "banner",    "style": "banner",  "base": Color("c41f8f"), "accent": Color("2dffff"), "glow": false, "passable": true, "hardness": 0.6},
 }
 
 func def(id: int) -> Variant:

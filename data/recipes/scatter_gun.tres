@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_0pwsy"]
+[ext_resource type="Resource" path="res://data/items/alloy_plate.tres" id="2_d5rv7"]
+[ext_resource type="Resource" path="res://data/items/conduit.tres" id="3_2ygxk"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="4_foudr"]
+[ext_resource type="Resource" path="res://data/items/scatter_gun.tres" id="5_24qci"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_vy4p1"]
+
+[sub_resource type="Resource" id="Resource_qr8cf"]
+script = ExtResource("1_0pwsy")
+item = ExtResource("2_d5rv7")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_8iqe6"]
+script = ExtResource("1_0pwsy")
+item = ExtResource("3_2ygxk")
+
+[sub_resource type="Resource" id="Resource_b8cs4"]
+script = ExtResource("1_0pwsy")
+item = ExtResource("4_foudr")
+quantity = 2
+
+[resource]
+script = ExtResource("6_vy4p1")
+output_item = ExtResource("5_24qci")
+inputs = Array[ExtResource("1_0pwsy")]([SubResource("Resource_qr8cf"), SubResource("Resource_8iqe6"), SubResource("Resource_b8cs4")])
+station = "fabricator"

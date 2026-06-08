@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_2o35s"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="2_2ftnw"]
+[ext_resource type="Resource" path="res://data/items/glass_pane.tres" id="3_u7pbc"]
+[ext_resource type="Resource" path="res://data/items/lamp_post.tres" id="4_gl348"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_yq6f0"]
+
+[sub_resource type="Resource" id="Resource_ikc7s"]
+script = ExtResource("1_2o35s")
+item = ExtResource("2_2ftnw")
+
+[sub_resource type="Resource" id="Resource_bno3t"]
+script = ExtResource("1_2o35s")
+item = ExtResource("3_u7pbc")
+
+[resource]
+script = ExtResource("5_yq6f0")
+output_item = ExtResource("4_gl348")
+inputs = Array[ExtResource("1_2o35s")]([SubResource("Resource_ikc7s"), SubResource("Resource_bno3t")])
+station = "workbench"

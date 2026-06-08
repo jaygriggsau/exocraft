@@ -11,6 +11,7 @@ signal hunger_changed(current: float, maximum: float)
 signal player_died
 signal enemies_toggled(enabled: bool)
 signal alien_rep_changed(rep: float, friendly: bool)
+signal armor_changed
 
 # Untyped on purpose: typing these as World/Player would create a parse-time
 # dependency cycle (those scripts reference this autoload back). Call sites
@@ -97,6 +98,43 @@ func feed_player(amount: float) -> void:
 
 func reset_hunger() -> void:
 	set_hunger(max_hunger)
+
+# --- Armor: three equip slots that cut incoming damage (capped) ---
+const ARMOR_SLOTS := ["head", "body", "legs"]
+const ARMOR_CAP := 0.75
+var armor := {"head": "", "body": "", "legs": ""}   # equipped item id per slot
+
+func armor_reduction() -> float:
+	var total := 0.0
+	for slot in ARMOR_SLOTS:
+		var id: String = armor[slot]
+		if id != "":
+			var it: Item = ItemDB.get_item(id)
+			if it:
+				total += it.stats.get("armor", 0.0)
+	return clampf(total / 100.0, 0.0, ARMOR_CAP)
+
+func armor_percent() -> int:
+	return int(round(armor_reduction() * 100.0))
+
+## Equip an armor item id into its slot; returns the id it displaced ("" if none).
+func equip_armor(id: String) -> String:
+	var it: Item = ItemDB.get_item(id)
+	if it == null or not it.stats.has("slot"):
+		return id                          # not armor: caller keeps it
+	var slot: String = it.stats.slot
+	var prev: String = armor.get(slot, "")
+	armor[slot] = id
+	armor_changed.emit()
+	return prev
+
+## Unequip a slot; returns the removed item id ("" if empty).
+func unequip_armor(slot: String) -> String:
+	var id: String = armor.get(slot, "")
+	if id != "":
+		armor[slot] = ""
+		armor_changed.emit()
+	return id
 
 func set_enemies_enabled(v: bool) -> void:
 	enemies_enabled = v

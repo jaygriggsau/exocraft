@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_emg1y"]
+
+[resource]
+script = ExtResource("1_emg1y")
+id = "scrap_greaves"
+display_name = "Scrap Greaves"
+tier = 1
+category = "armor"
+stack_size = 1
+base_value = 12
+stats = {
+"armor": 7.0,
+"slot": "legs"
+}
+color = Color(0.6039216, 0.54901963, 0.47058824, 1)

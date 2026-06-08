@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_wan38"]
+
+[resource]
+script = ExtResource("1_wan38")
+id = "exo_cuirass"
+display_name = "Exo Cuirass"
+tier = 3
+category = "armor"
+stack_size = 1
+base_value = 90
+stats = {
+"armor": 24.0,
+"slot": "body"
+}
+color = Color(0.6901961, 0.41568628, 1, 1)

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_fmi47"]
+
+[resource]
+script = ExtResource("1_fmi47")
+id = "alloy_greaves"
+display_name = "Alloy Greaves"
+tier = 2
+category = "armor"
+stack_size = 1
+base_value = 30
+stats = {
+"armor": 11.0,
+"slot": "legs"
+}
+color = Color(0.5411765, 0.5764706, 0.72156864, 1)

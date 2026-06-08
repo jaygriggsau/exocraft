@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_0tnlr"]
+[ext_resource type="Resource" path="res://data/items/composite.tres" id="2_ewu6h"]
+[ext_resource type="Resource" path="res://data/items/servo.tres" id="3_13y0g"]
+[ext_resource type="Resource" path="res://data/items/exotic_matter.tres" id="4_mhpwl"]
+[ext_resource type="Resource" path="res://data/items/exo_cuirass.tres" id="5_qluh4"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_32601"]
+
+[sub_resource type="Resource" id="Resource_7khk7"]
+script = ExtResource("1_0tnlr")
+item = ExtResource("2_ewu6h")
+quantity = 3
+
+[sub_resource type="Resource" id="Resource_ho2nv"]
+script = ExtResource("1_0tnlr")
+item = ExtResource("3_13y0g")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_jtru4"]
+script = ExtResource("1_0tnlr")
+item = ExtResource("4_mhpwl")
+quantity = 2
+
+[resource]
+script = ExtResource("6_32601")
+output_item = ExtResource("5_qluh4")
+inputs = Array[ExtResource("1_0tnlr")]([SubResource("Resource_7khk7"), SubResource("Resource_ho2nv"), SubResource("Resource_jtru4")])
+station = "synthesizer"
+unlock_condition = "tier>=3"

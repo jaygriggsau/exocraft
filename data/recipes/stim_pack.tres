@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_5fw5f"]
+[ext_resource type="Resource" path="res://data/items/med_cell.tres" id="2_cetxl"]
+[ext_resource type="Resource" path="res://data/items/crystal.tres" id="3_t4a48"]
+[ext_resource type="Resource" path="res://data/items/stim_pack.tres" id="4_a3c7e"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_0bx41"]
+
+[sub_resource type="Resource" id="Resource_qyvmx"]
+script = ExtResource("1_5fw5f")
+item = ExtResource("2_cetxl")
+
+[sub_resource type="Resource" id="Resource_epmpx"]
+script = ExtResource("1_5fw5f")
+item = ExtResource("3_t4a48")
+
+[resource]
+script = ExtResource("5_0bx41")
+output_item = ExtResource("4_a3c7e")
+inputs = Array[ExtResource("1_5fw5f")]([SubResource("Resource_qyvmx"), SubResource("Resource_epmpx")])
+station = "fabricator"

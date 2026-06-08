@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_d6n01"]
+
+[resource]
+script = ExtResource("1_d6n01")
+id = "energy_bar"
+display_name = "Energy Bar"
+tier = 1
+category = "food"
+stack_size = 20
+base_value = 7
+stats = {
+"food": 35.0
+}
+color = Color(1, 0.84705883, 0.41568628, 1)
+heal = 12.0

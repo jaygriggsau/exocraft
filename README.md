@@ -167,6 +167,12 @@ godot --path .
   floaters, and a scanning eye/thrusters for drones.
 - **Combat**: ranged energy bolts + ballistic bullets, a melee saber that cleaves
   and deflects bolts, player health, invuln frames, death + respawn.
+- **Armor**: three equip slots (head / body / legs) in the inventory — click a
+  craftable armor piece to wear it; total armor cuts incoming damage (capped),
+  shown as `ARMOR %` in the panel. Three sets scale up: Scrap → Alloy → Exo.
+- **Decor props**: placeable furniture — Lamp Post, Supply Crate, Control
+  Console, Bio-Vat and Banner (several glow and cast light); walk through the
+  lamp/banner, the rest are solid.
 - **Hunger & food**: a hunger bar that drains over time (faster while sprinting);
   staying fed lets health regenerate, while an empty stomach starves you (down to
   a floor). Eat craftable food — **Protein Ration** and **Nutrient Stew** (which

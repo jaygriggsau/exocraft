@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_tsn4c"]
+
+[resource]
+script = ExtResource("1_tsn4c")
+id = "stim_pack"
+display_name = "Stim-Pack"
+tier = 2
+category = "consumable"
+stack_size = 10
+base_value = 20
+color = Color(1, 0.3529412, 0.56078434, 1)
+heal = 80.0

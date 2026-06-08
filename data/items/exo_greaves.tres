@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_4kdt8"]
+
+[resource]
+script = ExtResource("1_4kdt8")
+id = "exo_greaves"
+display_name = "Exo Greaves"
+tier = 3
+category = "armor"
+stack_size = 1
+base_value = 64
+stats = {
+"armor": 16.0,
+"slot": "legs"
+}
+color = Color(0.6901961, 0.41568628, 1, 1)

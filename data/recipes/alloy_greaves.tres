@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_iom1w"]
+[ext_resource type="Resource" path="res://data/items/alloy_plate.tres" id="2_kwqhs"]
+[ext_resource type="Resource" path="res://data/items/ceramic.tres" id="3_2yq7t"]
+[ext_resource type="Resource" path="res://data/items/alloy_greaves.tres" id="4_guy78"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_box4y"]
+
+[sub_resource type="Resource" id="Resource_mpyyd"]
+script = ExtResource("1_iom1w")
+item = ExtResource("2_kwqhs")
+quantity = 3
+
+[sub_resource type="Resource" id="Resource_ee6uy"]
+script = ExtResource("1_iom1w")
+item = ExtResource("3_2yq7t")
+
+[resource]
+script = ExtResource("5_box4y")
+output_item = ExtResource("4_guy78")
+inputs = Array[ExtResource("1_iom1w")]([SubResource("Resource_mpyyd"), SubResource("Resource_ee6uy")])
+station = "fabricator"

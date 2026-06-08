@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_qb3uu"]
+[ext_resource type="Resource" path="res://data/items/alloy_plate.tres" id="2_pebps"]
+[ext_resource type="Resource" path="res://data/items/circuit_board.tres" id="3_hifpq"]
+[ext_resource type="Resource" path="res://data/items/console.tres" id="4_q0gct"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_tvdbr"]
+
+[sub_resource type="Resource" id="Resource_l8bs2"]
+script = ExtResource("1_qb3uu")
+item = ExtResource("2_pebps")
+
+[sub_resource type="Resource" id="Resource_5y07r"]
+script = ExtResource("1_qb3uu")
+item = ExtResource("3_hifpq")
+
+[resource]
+script = ExtResource("5_tvdbr")
+output_item = ExtResource("4_q0gct")
+inputs = Array[ExtResource("1_qb3uu")]([SubResource("Resource_l8bs2"), SubResource("Resource_5y07r")])
+station = "fabricator"

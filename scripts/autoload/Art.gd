@@ -215,6 +215,56 @@ func _make_tile_image(id: int, variant: int) -> Image:
 			_rect(img, 0, 0, 3, 1, base.lightened(0.15))
 			_rect(img, 0, TS - 1, 3, 1, base.darkened(0.25))
 			img.set_pixel(2, TS / 2, d.get("handle", Color("d8c060")))
+		"lamp":
+			# A lamp post: a pole with a glowing lantern on top (walk-through prop).
+			img.fill(Color(0, 0, 0, 0))
+			var g: Color = d.accent
+			_rect(img, 7, 5, 2, TS - 5, base)               # pole
+			_rect(img, 5, TS - 2, 6, 2, base.darkened(0.2))  # foot
+			_rect(img, 5, 1, 6, 5, base.darkened(0.1))       # lantern housing
+			_rect(img, 6, 2, 4, 3, g)                        # glowing glass
+			img.set_pixel(7, 3, Color(1, 1, 1, 0.9))
+		"crate":
+			# A supply crate with X bracing and corner bolts (already speckled base).
+			var ec: Color = d.accent
+			_rect(img, 0, 0, TS, 1, base.darkened(0.35))
+			_rect(img, 0, TS - 1, TS, 1, base.darkened(0.35))
+			_rect(img, 0, 0, 1, TS, base.darkened(0.35))
+			_rect(img, TS - 1, 0, 1, TS, base.darkened(0.35))
+			for i in TS:
+				img.set_pixel(i, i, ec)
+				img.set_pixel(TS - 1 - i, i, ec)
+			for c in [Vector2i(2, 2), Vector2i(TS - 3, 2), Vector2i(2, TS - 3), Vector2i(TS - 3, TS - 3)]:
+				img.set_pixel(c.x, c.y, ec.lightened(0.3))
+		"console":
+			# A terminal: dark screen with neon readouts over a base.
+			var sc: Color = d.accent
+			_rect(img, 1, 1, TS - 2, 9, Color("0a1018"))     # screen
+			for k in 3:
+				_rect(img, 3, 3 + k * 2, 3 + k * 3, 1, sc.darkened(randf_range(0.0, 0.4)))
+			img.set_pixel(TS - 4, 3, sc)
+			_rect(img, 0, 10, TS, 6, base)                   # console body
+			_rect(img, 2, 12, TS - 4, 1, sc.darkened(0.3))   # control strip
+		"vat":
+			# A tank of glowing fluid with rim rings and bubbles.
+			var fl: Color = d.accent
+			_rect(img, 2, 1, TS - 4, TS - 2, base.darkened(0.1))
+			_rect(img, 2, 1, 1, TS - 2, base.lightened(0.12))
+			_rect(img, 4, 4, TS - 8, TS - 7, fl)             # fluid window
+			img.set_pixel(6, TS - 5, fl.lightened(0.5))      # bubbles
+			img.set_pixel(9, TS - 7, fl.lightened(0.4))
+			_rect(img, 2, 1, TS - 4, 1, base.lightened(0.15))
+			_rect(img, 2, TS - 2, TS - 4, 1, base.darkened(0.3))
+		"banner":
+			# A hanging banner with an emblem and a tattered hem (walk-through).
+			img.fill(Color(0, 0, 0, 0))
+			_rect(img, 3, 0, TS - 6, 1, Color("d0d4e0"))     # rod
+			_rect(img, 4, 1, TS - 8, TS - 4, base)           # cloth
+			_rect(img, 6, 4, 4, 4, d.accent)                 # emblem
+			img.set_pixel(8, 6, d.accent.lightened(0.4))
+			_rect(img, 4, TS - 3, 2, 2, base)                # tattered hem
+			_rect(img, 8, TS - 3, 2, 2, base)
+			_rect(img, TS - 6, TS - 3, 2, 2, base)
 		_:
 			# "block" / "soil": subtle depth shade, plus per-variant pebbles,
 			# cracks, mottling and an occasional embedded fleck so neighbouring
@@ -316,9 +366,32 @@ func _make_item_icon(item_id: String) -> Image:
 	if d.place_tile >= 0:
 		return _tile_images[d.place_tile][0]
 
+	# armor pieces get a shape per body slot, tinted by the item colour
+	if d.stats.has("slot"):
+		return _make_armor_icon(d.stats.slot, d.color)
+
 	var img := _new_image(TS, TS)
 	var c: Color = d.color
 	match item_id:
+		"scatter_gun":
+			# Stubby double-barrel shotgun.
+			_rect(img, 2, 7, 10, 3, Color("3a3e5b"))
+			_rect(img, 11, 6, 3, 2, Color("6f74a0"))
+			_rect(img, 11, 9, 3, 2, Color("6f74a0"))
+			_rect(img, 3, 10, 3, 3, Color("2a2e45"))
+			img.set_pixel(13, 7, c.lightened(0.4))
+		"stim_pack":
+			# Syringe.
+			_rect(img, 5, 3, 4, 9, Color("203040"))
+			_rect(img, 6, 5, 2, 6, c)
+			_rect(img, 6, 1, 2, 2, Color("c0c4d0"))     # plunger
+			_rect(img, 6, 12, 2, 3, Color("c0c4d0"))    # needle
+		"energy_bar":
+			# Wrapped snack bar.
+			_rect(img, 3, 6, 10, 5, c.darkened(0.1))
+			_rect(img, 3, 6, 10, 1, c.lightened(0.25))
+			_rect(img, 2, 7, 1, 3, Color("8a8f9c"))     # wrapper ends
+			_rect(img, 13, 7, 1, 3, Color("8a8f9c"))
 		"pickaxe":
 			# Particle gun: body, barrel and a glowing emitter tip.
 			_rect(img, 3, 7, 7, 4, Color("4a4e6b"))     # body
@@ -370,6 +443,31 @@ func _make_item_icon(item_id: String) -> Image:
 				var y := rng.randi_range(4, 11)
 				img.set_pixel(x, y, _vary(c, rng, 0.12))
 			img.set_pixel(7, 6, c.lightened(0.4))
+	return img
+
+func _make_armor_icon(slot: String, c: Color) -> Image:
+	var img := _new_image(TS, TS)
+	var dk := c.darkened(0.3)
+	match slot:
+		"head":   # helmet with a visor slit
+			_rect(img, 4, 3, 8, 7, c)
+			_rect(img, 4, 3, 8, 1, c.lightened(0.2))
+			_rect(img, 4, 10, 8, 2, dk)
+			_rect(img, 5, 6, 6, 2, Color("10141d"))   # visor
+			img.set_pixel(10, 6, Color("2dffff"))
+		"body":   # chestplate
+			_rect(img, 3, 3, 10, 10, c)
+			_rect(img, 3, 3, 10, 1, c.lightened(0.2))
+			_rect(img, 2, 4, 1, 4, dk)                # pauldrons
+			_rect(img, 13, 4, 1, 4, dk)
+			_rect(img, 7, 4, 2, 8, dk)                # centre seam
+			img.set_pixel(7, 6, c.lightened(0.3))
+		_:        # legs / greaves
+			_rect(img, 4, 3, 3, 11, c)
+			_rect(img, 9, 3, 3, 11, c)
+			_rect(img, 4, 3, 8, 1, c.lightened(0.2))
+			_rect(img, 4, 12, 3, 2, dk)
+			_rect(img, 9, 12, 3, 2, dk)
 	return img
 
 func item_icon(item_id: String) -> Texture2D:

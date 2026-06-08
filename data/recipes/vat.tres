@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_lvdoq"]
+[ext_resource type="Resource" path="res://data/items/glass_pane.tres" id="2_hryad"]
+[ext_resource type="Resource" path="res://data/items/metal_ingot.tres" id="3_7h6pd"]
+[ext_resource type="Resource" path="res://data/items/biomass.tres" id="4_tjx3b"]
+[ext_resource type="Resource" path="res://data/items/vat.tres" id="5_ygn1r"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="6_x2oej"]
+
+[sub_resource type="Resource" id="Resource_rlq1t"]
+script = ExtResource("1_lvdoq")
+item = ExtResource("2_hryad")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_vij64"]
+script = ExtResource("1_lvdoq")
+item = ExtResource("3_7h6pd")
+
+[sub_resource type="Resource" id="Resource_tjx2i"]
+script = ExtResource("1_lvdoq")
+item = ExtResource("4_tjx3b")
+
+[resource]
+script = ExtResource("6_x2oej")
+output_item = ExtResource("5_ygn1r")
+inputs = Array[ExtResource("1_lvdoq")]([SubResource("Resource_rlq1t"), SubResource("Resource_vij64"), SubResource("Resource_tjx2i")])
+station = "fabricator"

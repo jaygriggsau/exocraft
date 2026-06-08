@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_g8c2g"]
+
+[resource]
+script = ExtResource("1_g8c2g")
+id = "crate"
+display_name = "Supply Crate"
+category = "decor"
+stack_size = 99
+base_value = 5
+color = Color(0.6039216, 0.47843137, 0.2901961, 1)
+place_tile = 27

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_tegwa"]
+
+[resource]
+script = ExtResource("1_tegwa")
+id = "console"
+display_name = "Control Console"
+tier = 2
+category = "decor"
+stack_size = 99
+base_value = 24
+color = Color(0.1764706, 1, 1, 1)
+place_tile = 28

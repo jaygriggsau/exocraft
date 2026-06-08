@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_j02b0"]
+[ext_resource type="Resource" path="res://data/items/polymer.tres" id="2_wcbe4"]
+[ext_resource type="Resource" path="res://data/items/banner.tres" id="3_m76sl"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="4_m0mqa"]
+
+[sub_resource type="Resource" id="Resource_lgi2u"]
+script = ExtResource("1_j02b0")
+item = ExtResource("2_wcbe4")
+quantity = 2
+
+[resource]
+script = ExtResource("4_m0mqa")
+output_item = ExtResource("3_m76sl")
+output_quantity = 2
+inputs = Array[ExtResource("1_j02b0")]([SubResource("Resource_lgi2u")])
+station = "workbench"

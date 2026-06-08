@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="Recipe" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/RecipeInput.gd" id="1_6btmd"]
+[ext_resource type="Resource" path="res://data/items/sand.tres" id="2_ihovb"]
+[ext_resource type="Resource" path="res://data/items/stone.tres" id="3_fy4n1"]
+[ext_resource type="Resource" path="res://data/items/ceramic.tres" id="4_njraq"]
+[ext_resource type="Script" path="res://scripts/items/Recipe.gd" id="5_ylgns"]
+
+[sub_resource type="Resource" id="Resource_ty5bi"]
+script = ExtResource("1_6btmd")
+item = ExtResource("2_ihovb")
+quantity = 2
+
+[sub_resource type="Resource" id="Resource_wl1ly"]
+script = ExtResource("1_6btmd")
+item = ExtResource("3_fy4n1")
+
+[resource]
+script = ExtResource("5_ylgns")
+output_item = ExtResource("4_njraq")
+output_quantity = 2
+inputs = Array[ExtResource("1_6btmd")]([SubResource("Resource_ty5bi"), SubResource("Resource_wl1ly")])
+station = "workbench"

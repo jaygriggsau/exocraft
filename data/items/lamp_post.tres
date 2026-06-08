@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_iycjb"]
+
+[resource]
+script = ExtResource("1_iycjb")
+id = "lamp_post"
+display_name = "Lamp Post"
+tier = 1
+category = "decor"
+stack_size = 99
+base_value = 10
+color = Color(0.1764706, 1, 1, 1)
+place_tile = 26

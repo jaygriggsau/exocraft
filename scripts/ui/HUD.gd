@@ -26,6 +26,8 @@ var _scan: ColorRect
 
 var _hotbar_slots := []
 var _inv_slots := []
+var _armor_slots := []       # [{slot:"head"/"body"/"legs", panel, icon, label}, ...]
+var _armor_label: Label
 var _inv_panel: Control
 var _inv_size := Vector2.ZERO
 var _craft_panel: Control
@@ -123,6 +125,7 @@ func _ready() -> void:
 	Game.inventory_changed.connect(_refresh)
 	Game.health_changed.connect(_on_health)
 	Game.hunger_changed.connect(_on_hunger)
+	Game.armor_changed.connect(_refresh)
 	Game.player_died.connect(_on_death)
 	call_deferred("_refresh")
 	call_deferred("_layout")
@@ -241,12 +244,19 @@ func _update_tooltip() -> void:
 	var mp: Vector2 = _root.get_global_mouse_position()
 	# cargo / hotbar item names
 	if _inv_panel.visible and Game.inventory != null:
+		for a in _armor_slots:
+			if a.panel.get_global_rect().has_point(mp):
+				var aid: String = Game.armor[a.slot]
+				_show_tip("%s slot: %s" % [a.slot.capitalize(), ItemDB.name_of(aid) if aid != "" else "empty"], mp)
+				return
 		for i in Inventory.SIZE:
 			var s: Dictionary = _inv_slots[i]
 			if s.panel.get_global_rect().has_point(mp):
 				var stack = Game.inventory.slots[i]
 				if stack != null:
 					var nm := ItemDB.name_of(stack.id)
+					if ItemDB.get_item(stack.id).stats.has("armor"):
+						nm += "  (+%d armor, click to wear)" % int(ItemDB.get_item(stack.id).stats.armor)
 					_show_tip("%s   x%d" % [nm, stack.count] if stack.count > 1 else nm, mp)
 				return
 	# fabricator recipe details (the grid only shows icons)
@@ -588,7 +598,8 @@ func _build_inventory() -> void:
 	var gw := cols * (SLOT + PAD) - PAD
 	var gh := rows * (SLOT + PAD) - PAD
 	var top := 46
-	_inv_size = Vector2(gw + 32, gh + top + 16)
+	var armor_y := top + gh + 26                  # an armour row beneath the cargo grid
+	_inv_size = Vector2(gw + 32, armor_y + SLOT + 16)
 	var bg := Panel.new()
 	bg.add_theme_stylebox_override("panel", _panel_sb())
 	bg.position = Vector2.ZERO
@@ -604,6 +615,15 @@ func _build_inventory() -> void:
 		var cy := i / cols
 		var s := _make_slot(_inv_panel, 16 + cx * (SLOT + PAD), top + cy * (SLOT + PAD), SLOT)
 		_inv_slots.append(s)
+	# equip slots: head / body / legs (click cargo armour to equip, click to remove)
+	_armor_label = _make_label("ARMOR", 16)
+	_armor_label.modulate = Color("9fe8ff")
+	_armor_label.position = Vector2(16, armor_y - 22)
+	_inv_panel.add_child(_armor_label)
+	for k in Game.ARMOR_SLOTS.size():
+		var a := _make_slot(_inv_panel, 16 + k * (SLOT + PAD), armor_y, SLOT)
+		a["slot"] = Game.ARMOR_SLOTS[k]
+		_armor_slots.append(a)
 
 func _build_crafting() -> void:
 	_craft_panel = Control.new()
@@ -955,12 +975,19 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e.is_action_pressed("interact"):
 		_toggle_pod()
 		return
-	# click-to-transfer between cargo and an open storage pod
+	# click-to-transfer between cargo / storage pod / armour slots
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and Game.ui_blocking:
 		var mp: Vector2 = _root.get_global_mouse_position()
+		for a in _armor_slots:
+			if a.panel.get_global_rect().has_point(mp):
+				_unequip_armor(a.slot)               # click an armour slot to take it off
+				return
 		for i in Inventory.SIZE:
 			if _inv_slots[i].panel.get_global_rect().has_point(mp):
-				_transfer_cargo_to_pod(i)
+				if _open_pod:
+					_transfer_cargo_to_pod(i)
+				else:
+					_equip_from_cargo(i)             # click cargo armour to wear it
 				return
 		if _open_pod:
 			for j in StoragePod.SIZE:
@@ -1035,6 +1062,31 @@ func _transfer_pod_to_cargo(j: int) -> void:
 		_open_pod.slots[j] = null
 	Game.inventory_changed.emit()
 
+func _equip_from_cargo(i: int) -> void:
+	var s = Game.inventory.slots[i]
+	if s == null:
+		return
+	var it := ItemDB.get_item(s.id)
+	if it == null or not it.stats.has("slot"):
+		return                              # not an armour piece
+	var prev := Game.equip_armor(s.id)      # wear it, get back what it replaced
+	if s.count > 1:
+		s.count -= 1
+	else:
+		Game.inventory.slots[i] = null
+	if prev != "":
+		Game.inventory.add(prev, 1)         # the old piece returns to cargo
+	Game.inventory_changed.emit()
+
+func _unequip_armor(slot: String) -> void:
+	var id: String = Game.armor[slot]
+	if id == "":
+		return
+	if Game.inventory.add(id, 1) > 0:
+		return                              # no room in cargo: keep it on
+	Game.unequip_armor(slot)
+	Game.inventory_changed.emit()
+
 func _on_craft(r: Recipe) -> void:
 	ItemDB.try_craft(r)
 
@@ -1048,6 +1100,12 @@ func _refresh() -> void:
 		_fill_slot(_inv_slots[i], Game.inventory.slots[i], false)
 	for row in _craft_rows:
 		_style_recipe(row)
+	for a in _armor_slots:
+		var id: String = Game.armor[a.slot]
+		a.icon.texture = Art.item_icon(id) if id != "" else null
+		a.label.text = ""
+	if _armor_label:
+		_armor_label.text = "ARMOR  %d%%" % Game.armor_percent()
 	if _open_pod and is_instance_valid(_open_pod):
 		_refresh_pod()
 	var sid := Game.inventory.selected_id()

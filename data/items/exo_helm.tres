@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Item" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/Item.gd" id="1_s1geg"]
+
+[resource]
+script = ExtResource("1_s1geg")
+id = "exo_helm"
+display_name = "Exo Helm"
+tier = 3
+category = "armor"
+stack_size = 1
+base_value = 60
+stats = {
+"armor": 15.0,
+"slot": "head"
+}
+color = Color(0.6901961, 0.41568628, 1, 1)

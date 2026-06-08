@@ -490,12 +490,15 @@ func _try_fire(item_id: String) -> void:
 	if dir.length() < 1.0:
 		dir = Vector2(facing, 0)
 	dir = dir.normalized()
-	if spread > 0.0:
-		dir = dir.rotated(randf_range(-spread, spread))   # ballistic scatter
-	var p := Projectile.new()
-	p.setup(global_position + dir * 10.0, dir, dmg, spd, true, style)
+	var pellets: int = int(it.stats.get("pellets", 1))    # scatter guns fire several
+	for i in maxi(1, pellets):
+		var pd := dir
+		if spread > 0.0:
+			pd = dir.rotated(randf_range(-spread, spread))
+		var p := Projectile.new()
+		p.setup(global_position + pd * 10.0, pd, dmg, spd, true, style)
+		Game.world.add_child(p)
 	Sfx.play("gunshot" if style == "bullet" else "shoot")
-	Game.world.add_child(p)
 	_fire_cd = cd
 	# kickback + muzzle flash
 	_recoil += -dir * FIRE_KICK
@@ -597,7 +600,7 @@ func take_damage(amount: float) -> void:
 	_invuln = INVULN
 	Sfx.play("hit")
 	_no_dmg = 0.0
-	Game.damage_player(amount)
+	Game.damage_player(amount * (1.0 - Game.armor_reduction()))   # armor soaks part of the hit
 	# knockback flash
 	modulate = Color(1, 0.5, 0.5)
 	create_tween().tween_property(self, "modulate", Color.WHITE, INVULN)
