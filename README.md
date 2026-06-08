@@ -52,6 +52,12 @@ godot --path .
 
 ## Features
 
+- **Terraria-scale world**: small 16px blocks with the player standing ~2.75 tiles
+  tall over them, a zoomed-out camera for a wide view, and **autotiled terrain** —
+  natural ground (dirt/stone/grass/sand/ice/jungle/obsidite) renders with
+  neighbour-aware **blended edges**: lit exposed tops, shadowed sides/bottoms,
+  grass overhangs and rounded outer corners, so blocks merge instead of looking
+  like flat squares.
 - **Endless world** streamed in 16×16-tile chunks around the player. Edits persist
   in memory; generation is deterministic per world seed.
 - **Four surface biomes** chosen by low-frequency noise — Neon Wastes, Cryo Tundra,

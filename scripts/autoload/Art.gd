@@ -6,7 +6,7 @@ extends Node
 ## of these out for hand-drawn PNGs later without touching gameplay code.
 
 const TS := 16  ## tile size in pixels
-const TILE_VARIANTS := 6  ## per-tile texture variants so terrain isn't uniform
+const EDGE_MASKS := 16  ## neighbour-edge variants (4-bit air mask) for autotiled terrain
 
 var tileset: TileSet
 var atlas_source_id := 0
@@ -70,17 +70,19 @@ func _rect(img: Image, x: int, y: int, w: int, h: int, c: Color) -> void:
 # Tiles
 # ---------------------------------------------------------------------------
 func _build_tile_images() -> void:
+	# one image per tile id per edge mask (which neighbours are open air); natural
+	# terrain uses the mask to draw blended edges, other tiles ignore it.
 	for id in Tiles.ids():
 		var variants: Array = []
-		for v in TILE_VARIANTS:
-			variants.append(_make_tile_image(id, v))
+		for m in EDGE_MASKS:
+			variants.append(_make_tile_image(id, m))
 		_tile_images[id] = variants
 
-func _make_tile_image(id: int, variant: int) -> Image:
+func _make_tile_image(id: int, mask: int) -> Image:
 	var d = Tiles.def(id)
 	var img := _new_image(TS, TS)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 1000 + id * 101 + variant * 37
+	rng.seed = 1000 + id * 101          # base art is identical across masks so they tile
 	var style: String = d.style
 	var base: Color = d.base
 
@@ -266,50 +268,80 @@ func _make_tile_image(id: int, variant: int) -> Image:
 			_rect(img, 8, TS - 3, 2, 2, base)
 			_rect(img, TS - 6, TS - 3, 2, 2, base)
 		_:
-			# "block" / "soil": subtle depth shade, plus per-variant pebbles,
-			# cracks, mottling and an occasional embedded fleck so neighbouring
-			# blocks of the same type don't look identical.
-			# Vary the shade gradient direction per variant for extra diversity.
-			var dir := rng.randi() % 3
+			# "block" / "soil": a soft base shade + a few static flecks; the
+			# Terraria-style lit edges are added afterwards based on neighbours.
 			for y in TS:
 				for x in TS:
-					var lit := false
-					match dir:
-						0: lit = x + y > TS + 6           # bottom-right shadow
-						1: lit = x - y > 4                # diagonal the other way
-						_: lit = y > TS - 5               # darker base band
-					if lit:
+					if y > TS - 5:
 						img.set_pixel(x, y, _vary(base.darkened(0.12), rng, 0.04))
-			# soft mottled patches
-			for _m in 1 + rng.randi() % 2:
-				var mx := rng.randi_range(2, TS - 4)
-				var my := rng.randi_range(2, TS - 4)
-				var mc := base.lightened(0.08) if rng.randf() < 0.5 else base.darkened(0.14)
-				for oy in 3:
-					for ox in 3:
-						if rng.randf() < 0.6:
-							img.set_pixel(clampi(mx + ox, 0, TS - 1), clampi(my + oy, 0, TS - 1), _vary(mc, rng, 0.05))
-			for f in 3 + rng.randi() % 3:
+			for f in 4:
 				var px := rng.randi_range(2, TS - 3)
 				var py := rng.randi_range(2, TS - 3)
-				var pc := base.lightened(0.2) if rng.randf() < 0.5 else base.darkened(0.26)
+				var pc := base.lightened(0.16) if rng.randf() < 0.5 else base.darkened(0.24)
 				img.set_pixel(px, py, pc)
-				img.set_pixel(px + 1, py, pc)
-				img.set_pixel(px, py + 1, _vary(pc, rng, 0.05))
-			if rng.randf() < 0.55:
-				var cx := rng.randi_range(3, TS - 4)
-				var cy := rng.randi_range(2, TS - 6)
-				var cl := base.darkened(0.34)
-				for k in 2 + rng.randi() % 3:
-					img.set_pixel(clampi(cx + rng.randi_range(-1, 1), 0, TS - 1), clampi(cy + k, 0, TS - 1), cl)
+				img.set_pixel(px + 1, py, _vary(pc, rng, 0.05))
+	# neighbour-aware edges for natural terrain (the autotiled Terraria look)
+	if d.style == "soil" or d.style == "block" or d.style == "grass":
+		_apply_edges(img, mask, d)
 	return img
+
+## Decorate a terrain tile's open edges (mask bits: 1=up 2=right 4=down 8=left
+## are AIR) with a lit top lip, shadowed sides/bottom, grass overhang and rounded
+## outer corners — so blocks visually merge into the terrain instead of being
+## flat squares.
+func _apply_edges(img: Image, mask: int, d: Dictionary) -> void:
+	var base: Color = d.base
+	var is_grass: bool = d.style == "grass"
+	var up := (mask & 1) != 0
+	var right := (mask & 2) != 0
+	var down := (mask & 4) != 0
+	var left := (mask & 8) != 0
+	if up and not is_grass:
+		_grad_edge(img, "top", base.lightened(0.28), 2)     # sunlit exposed top
+	if down:
+		_grad_edge(img, "bottom", base.darkened(0.4), 2)
+	if left:
+		_grad_edge(img, "left", base.darkened(0.24), 2)
+	if right:
+		_grad_edge(img, "right", base.darkened(0.24), 2)
+	if is_grass:
+		var top: Color = d.get("top", base)
+		if up:
+			_grad_edge(img, "top", top.darkened(0.05), 1)
+		if left and up:
+			_rect(img, 0, 0, 2, 4, top)                      # grass overhangs the side
+		if right and up:
+			_rect(img, TS - 2, 0, 2, 4, top)
+	# round the outer corners where two open edges meet (transparent silhouette)
+	var clear := Color(0, 0, 0, 0)
+	if up and left:
+		img.set_pixel(0, 0, clear)
+	if up and right:
+		img.set_pixel(TS - 1, 0, clear)
+	if down and left:
+		img.set_pixel(0, TS - 1, clear)
+	if down and right:
+		img.set_pixel(TS - 1, TS - 1, clear)
+
+func _grad_edge(img: Image, side: String, col: Color, w: int) -> void:
+	for i in w:
+		var a := 0.85 * (1.0 - float(i) / float(w))          # strongest at the very edge
+		for j in TS:
+			var px: int
+			var py: int
+			match side:
+				"top": px = j; py = i
+				"bottom": px = j; py = TS - 1 - i
+				"left": px = i; py = j
+				_: px = TS - 1 - i; py = j                    # right
+			img.set_pixel(px, py, img.get_pixel(px, py).lerp(col, a))
 
 func _build_tileset() -> void:
 	var maxid := Tiles.max_id()
-	# atlas: one column per tile id, one row per variant
-	var atlas := _new_image((maxid + 1) * TS, TILE_VARIANTS * TS)
+	# atlas: one column per tile id, one row per edge mask
+	var atlas := _new_image((maxid + 1) * TS, EDGE_MASKS * TS)
 	for id in Tiles.ids():
-		for v in TILE_VARIANTS:
+		for v in EDGE_MASKS:
 			atlas.blit_rect(_tile_images[id][v], Rect2i(0, 0, TS, TS), Vector2i(id * TS, v * TS))
 	var tex := ImageTexture.create_from_image(atlas)
 
@@ -338,7 +370,7 @@ func _build_tileset() -> void:
 		var dd = Tiles.def(id)
 		var passable: bool = dd.get("passable", false)          # open doors don't collide
 		var occlude: bool = not passable and not dd.get("no_occlude", false)  # windows let light through
-		for v in TILE_VARIANTS:
+		for v in EDGE_MASKS:
 			var coord := Vector2i(id, v)
 			src.create_tile(coord)
 			var td := src.get_tile_data(coord, 0)
@@ -364,7 +396,7 @@ func _make_item_icon(item_id: String) -> Image:
 	var d = ItemDB.get_item(item_id)
 	# Block items just reuse their tile artwork (first variant).
 	if d.place_tile >= 0:
-		return _tile_images[d.place_tile][0]
+		return _tile_images[d.place_tile][15]   # all-edges-open: a nicely bevelled standalone block
 
 	# armor pieces get a shape per body slot, tinted by the item colour
 	if d.stats.has("slot"):

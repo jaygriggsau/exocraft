@@ -3,7 +3,7 @@ extends CharacterBody2D
 ## The player: platforming movement plus mine / build / shoot interactions that
 ## all key off the currently selected hotbar item.
 
-const SPEED := 120.0
+const SPEED := 165.0
 const SPRINT_MULT := 1.7
 const REGEN_DELAY := 4.0            # seconds out of combat before health regens
 const REGEN_RATE := 7.0            # health per second
@@ -12,12 +12,12 @@ const HUNGER_SPRINT := 1.9         # drain multiplier while sprinting
 const WELL_FED := 30.0             # hunger needed for health to regenerate
 const STARVE_DMG := 2.5            # health/sec lost while starving (hunger 0)
 const STARVE_FLOOR := 20.0         # starvation won't drop you below this health
-const ACCEL := 1400.0
-const FRICTION := 1600.0
-const JUMP_VELOCITY := -270.0
-const GRAVITY := 760.0
-const MAX_FALL := 520.0
-const REACH := 5.5                 # tiles
+const ACCEL := 1900.0
+const FRICTION := 2100.0
+const JUMP_VELOCITY := -340.0
+const GRAVITY := 900.0
+const MAX_FALL := 680.0
+const REACH := 6.5                 # tiles
 const MINE_BASE := 0.12            # base unit for tree-harvest / dismantle / drain
 const MINE_BLOCK_BASE := 0.75      # seconds per hardness point with the Particle Gun
                                    # (hardest block, Exotic hardness 8 -> 6.0s; upgraded
@@ -59,20 +59,22 @@ func _ready() -> void:
 	Game.inventory = inv
 	Game.player = self
 
+	# Terraria-scale: the player stands ~2.75 tiles tall over 16px blocks
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(10, 20)
+	rect.size = Vector2(20, 44)
 	shape.shape = rect
 	add_child(shape)
 
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = Art.player_frames()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.scale = Vector2(2, 2)        # 12x22 art rendered at ~24x44 to match the bigger body
 	sprite.play("idle")
 	add_child(sprite)
 
 	var cam := Camera2D.new()
-	cam.zoom = Vector2(3.5, 3.5)
+	cam.zoom = Vector2(2.0, 2.0)        # zoomed out for the wide Terraria view
 	cam.position_smoothing_enabled = true
 	cam.position_smoothing_speed = 8.0
 	add_child(cam)
@@ -87,7 +89,7 @@ func _ready() -> void:
 	_torch.scale = Vector2(0.7, 0.7)            # ~90px radius (~4 blocks lit, fading out)
 	_torch.shadow_enabled = true
 	_torch.shadow_filter = Light2D.SHADOW_FILTER_PCF5
-	_torch.position = Vector2(0, -6)
+	_torch.position = Vector2(0, -16)
 	add_child(_torch)
 	# a faint personal glow that ignores walls, so you're never pitch-invisible
 	var aura := PointLight2D.new()
@@ -345,7 +347,7 @@ func _spawn_drop(t: Vector2i, item_id: String) -> void:
 	Game.world.add_child(p)
 
 func _player_rect() -> Rect2:
-	return Rect2(global_position - Vector2(6, 11), Vector2(12, 22))
+	return Rect2(global_position - Vector2(10, 22), Vector2(20, 44))
 
 func _tile_rect(c: Vector2i) -> Rect2:
 	return Rect2(c.x * World.TILE, c.y * World.TILE, World.TILE, World.TILE)
@@ -407,23 +409,24 @@ func _try_place_door(closed_tile: int) -> void:
 	var bottom := _target_tile()
 	if not _in_reach(bottom):
 		return
-	var top := bottom + Vector2i(0, -1)
+	# doors are three tiles tall so the player can walk through them
+	var cells := [bottom, bottom + Vector2i(0, -1), bottom + Vector2i(0, -2)]
 	var body := _player_rect()
-	for c in [bottom, top]:
+	for c in cells:
 		if Tiles.is_solid(Game.world.get_tile(c)):
 			return
 		if _tile_rect(c).intersects(body):
 			return
-	# support: resting on the ground, or anchored to a wall beside either cell
+	# support: resting on the ground, or anchored to a wall beside any cell
 	var supported := Tiles.is_solid(Game.world.get_tile(bottom + Vector2i(0, 1)))
-	for c in [bottom, top]:
+	for c in cells:
 		for o in [Vector2i(1, 0), Vector2i(-1, 0)]:
 			if Tiles.is_solid(Game.world.get_tile(c + o)):
 				supported = true
 	if not supported:
 		return
-	Game.world.set_tile(bottom, closed_tile)
-	Game.world.set_tile(top, closed_tile)
+	for c in cells:
+		Game.world.set_tile(c, closed_tile)
 	inv.consume_selected(1)
 	_place_cd = PLACE_COOLDOWN
 
@@ -452,7 +455,7 @@ func _try_deploy(item_id: String) -> void:
 	if not Tiles.is_solid(Game.world.get_tile(t + Vector2i(0, 1))):
 		return                              # needs solid ground beneath
 	var tile_rect := Rect2(t.x * World.TILE, (t.y - 1) * World.TILE, World.TILE, World.TILE * 2)
-	var body := Rect2(global_position - Vector2(6, 11), Vector2(12, 22))
+	var body := _player_rect()
 	if tile_rect.intersects(body):
 		return                              # don't drop it on ourselves
 	Game.world.spawn_structure(item_id, t)

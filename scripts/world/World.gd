@@ -751,12 +751,27 @@ func _render_chunk(cc: Vector2i) -> void:
 			if id != Tiles.AIR:
 				var tx := ox + lx
 				var ty := oy + ly
-				tilemap.set_cell(Vector2i(tx, ty), Art.atlas_source_id, Art.tile_atlas_coords(id, _tile_variant(tx, ty)))
+				tilemap.set_cell(Vector2i(tx, ty), Art.atlas_source_id, Art.tile_atlas_coords(id, _edge_mask(tx, ty, id)))
 
-func _tile_variant(tx: int, ty: int) -> int:
-	var h: int = tx * 374761393 + ty * 668265263
-	h = (h ^ (h >> 13)) * 1274126177
-	return absi(h) % Art.TILE_VARIANTS
+## Edge mask for autotiling: which orthogonal neighbours are open air
+## (1=up 2=right 4=down 8=left). Only natural terrain blends; everything else is flat.
+func _edge_mask(tx: int, ty: int, id: int) -> int:
+	if not Tiles.is_terrain(id):
+		return 0
+	var m := 0
+	if not Tiles.is_solid(get_tile(Vector2i(tx, ty - 1))): m |= 1
+	if not Tiles.is_solid(get_tile(Vector2i(tx + 1, ty))): m |= 2
+	if not Tiles.is_solid(get_tile(Vector2i(tx, ty + 1))): m |= 4
+	if not Tiles.is_solid(get_tile(Vector2i(tx - 1, ty))): m |= 8
+	return m
+
+## Draw a single cell with its current tile + edge mask (or clear it if air).
+func _render_cell(t: Vector2i) -> void:
+	var id := get_tile(t)
+	if id == Tiles.AIR:
+		tilemap.erase_cell(t)
+	else:
+		tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id, _edge_mask(t.x, t.y, id)))
 
 func _erase_chunk(cc: Vector2i) -> void:
 	var ox := cc.x * CHUNK
@@ -797,18 +812,21 @@ func set_tile(t: Vector2i, id: int) -> int:
 	var prev: int = data[ly * CHUNK + lx]
 	data[ly * CHUNK + lx] = id
 	if _loaded.has(cc):
+		_render_cell(t)
 		if id == Tiles.AIR:
-			tilemap.erase_cell(t)
 			_clear_decor(t + Vector2i(0, -1))   # destroy a decoration resting on the mined block
 			# liquid above/beside the newly opened cell can now flow into it
 			for o in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]:
 				_wake_water(t + o)
 		else:
-			tilemap.set_cell(t, Art.atlas_source_id, Art.tile_atlas_coords(id, _tile_variant(t.x, t.y)))
 			_clear_decor(t)                     # a placed block covers any decoration here
 			# a block placed in liquid displaces it; push it to neighbours
 			if _water.get(t, 0.0) > 0.0:
 				_displace_water(t)
+		# the change flips neighbours' open edges, so re-blend them too
+		for o in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
+			if _loaded.has(chunk_of_tile(t + o)):
+				_render_cell(t + o)
 	# refresh block lights for this chunk if it is in the lit zone
 	if _chunk_lights.has(cc):
 		_free_chunk_lights(cc)
@@ -885,15 +903,16 @@ func _gen_tile(tx: int, ty: int, surf: int, biome: int) -> int:
 func _is_cave(tx: int, ty: int, surf: int) -> bool:
 	var depth := float(ty - surf)
 	var df := clampf(depth / 220.0, 0.0, 1.0)        # 0 near surface, 1 deep
-	# winding corridors: both fields near zero at once -> a thin 1-D path
-	var hw := 0.055 + 0.045 * df                       # tunnels widen with depth
+	# winding corridors: both fields near zero at once -> a path wide enough for
+	# the (now taller) player to walk through
+	var hw := 0.095 + 0.06 * df                        # tunnels widen with depth
 	var a := _tunnel_a.get_noise_2d(float(tx), float(ty))
 	var b := _tunnel_b.get_noise_2d(float(tx), float(ty))
 	if absf(a) < hw and absf(b) < hw:
 		return true
 	# big chambers: easier threshold deeper, so the depths open right up
 	var cav := _cavern_noise.get_noise_2d(float(tx), float(ty))
-	if cav > lerpf(0.50, 0.30, df):
+	if cav > lerpf(0.42, 0.22, df):
 		return true
 	return false
 

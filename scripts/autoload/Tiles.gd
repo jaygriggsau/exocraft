@@ -97,6 +97,11 @@ func is_solid(id: int) -> bool:
 	var d = DEFS.get(id)
 	return d != null and not d.get("passable", false)
 
+## Natural ground that gets Terraria-style blended edges (vs flat ore/crafted/decor).
+func is_terrain(id: int) -> bool:
+	return id == DIRT or id == STONE or id == GRASS or id == ICE \
+		or id == JUNGLE or id == SAND or id == DARKROCK
+
 ## Is this tile part of a door (closed or open)?
 func is_door(id: int) -> bool:
 	var d = DEFS.get(id)
